@@ -1,0 +1,11 @@
+{
+  "name": "webclient",
+  "homepage": "https://github.com/MergeMyPullRequest/order-splitter",
+  "authors": [
+    "Jon Smithers <mail@jonsmithers.link>"
+  ],
+  "description": "",
+  "main": "",
+  "license": "MIT",
+  "private": true
+}

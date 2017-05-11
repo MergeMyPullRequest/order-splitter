@@ -27,8 +27,23 @@ var gulpif = require('gulp-if');
 var minifyCss = require('gulp-clean-css');
 var minifyHtml = require('gulp-minify-html');
 var replace = require('gulp-replace');
+var sourcemaps = require('gulp-sourcemaps');
 var uglify = require('gulp-uglify');
 var vulcanize = require('gulp-vulcanize');
+
+gulp.task('react', ['clean'], function() {
+    return gulp.src(["./webclient/test.jsx"])
+        .pipe(sourcemaps.init())
+        .pipe(babel({
+            presets: [
+                'es2015',
+                'react'
+            ]
+        })
+        .pipe(debug())
+        .pipe(sourcemaps.write('.'))
+        .pipe(gulp.dest('./dist/')));
+});
 
 gulp.task('default', ['vulcanize', 'copy-files']);
 

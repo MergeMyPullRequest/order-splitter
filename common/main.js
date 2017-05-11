@@ -1,9 +1,9 @@
 window.onload = init;
-window.addEventListener('message', event => {
-    if(event.data !== 'parseDom') {
-        handleOrder(() => event.data);
-    }
-});
+// window.addEventListener('message', event => {
+//     if(event.data !== 'parseDom') {
+//         handleOrder(() => event.data);
+//     }
+// });
 
 function requestOrder(e) {
     window.postMessage('parseDom', '*');
@@ -74,7 +74,7 @@ function handleOrder (parserFunction) {
         order.split();
         display(order);
     } catch (error) {
-        alert(error);
+        // alert(error);
         console.error(error);
     }
 }
