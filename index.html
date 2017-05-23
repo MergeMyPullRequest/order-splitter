@@ -1,17 +1,8 @@
-<html><head><script src=index.js defer></script><title>Order Splitter</title><meta charset=UTF-8><meta name=theme-color content=#11923B><meta name=mobile-web-app-capable content=yes><meta name=application-name content=PSK><link rel=icon sizes=192x192 href=common/app-icon/ordersplitter192.png asnyc><link rel=icon sizes=16x16 href=common/app-icon/ordersplitter16.png><link rel=icon sizes=32x32 href=common/app-icon/ordersplitter32.png><meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-status-bar-style content=black><meta name=apple-mobile-web-app-title content="Order Splitter"><link rel=apple-touch-icon href=common/app-icon/ordersplitter152.png asnyc><meta name=msapplication-TileColor content=#3372DF><meta name=msapplication-TileImage content=common/app-icon/ordersplitter144.png async><style>
+<html><head><title>Order Splitter</title><meta charset=UTF-8><meta name=theme-color content=#11923B><meta name=mobile-web-app-capable content=yes><meta name=application-name content=PSK><link rel=icon sizes=192x192 href=common/app-icon/ordersplitter192.png asnyc><link rel=icon sizes=16x16 href=common/app-icon/ordersplitter16.png><link rel=icon sizes=32x32 href=common/app-icon/ordersplitter32.png><meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-status-bar-style content=black><meta name=apple-mobile-web-app-title content="Order Splitter"><link rel=apple-touch-icon href=common/app-icon/ordersplitter152.png asnyc><meta name=msapplication-TileColor content=#3372DF><meta name=msapplication-TileImage content=common/app-icon/ordersplitter144.png async><script src=common/bower_components/webcomponentsjs/custom-elements-es5-adapter.js></script><style>
 #breakdown, #breakdown th {
   border: 1px solid;
   border-collapse: collapse;
 }
 
-</style><link rel=manifest href=manifest.json></head><body><div align=right>0.5.2</div><div align=right>6e46fe3</div><div align=right>Fri May 19 2017 18:03:42 GMT-0400 (EDT)</div><table><tbody><tr><td>Order:</td></tr><tr><td><textarea id=textarea rows=20 cols=60></textarea></td><td>Example input:<br>(from OrderUp confirmation page)<pre>1 	12 Nuggets - 	$4.39
-	Sauce: Ketchup
-	Label for:Alice
-
-2 	Tots - 	$1.99
-	Label for:Bob
-
-1 	6 Wings - 	$6.29
-	Wing Seasoning: Sweet Honey BBQ
-	Label for:Charlie
-					</pre></td></tr></tbody></table>Taxes: $<input id=taxes type=number><br>Fees: $<input id=fees type=number><br>Tip: <span id=fixedSpan hidden>$</span><input id=tip type=number><span id=percentageSpan>%</span> <input id=percentageCheckbox type=checkbox checked>Percentage<br><button id=split>Split</button> <button id=parseDom>Parse</button><p id=result></p></body></html>
+</style><link rel=manifest href=manifest.json></head><body><div hidden by-vulcanize><dom-module id=example-order assetpath="elements/"><template strip-whitespace><dom-repeat items=[[orders]]><template><span>[[item]]</span></template></dom-repeat><order-data id=data></order-data></template></dom-module></div><div align=right>0.5.2</div><div align=right>f3e3f70</div><div align=right>Tue May 23 2017 13:05:09 GMT-0400 (EDT)</div><table><tbody><tr><td>Order:</td></tr><tr><td><textarea id=textarea rows=20 cols=60></textarea></td><td>Example input:<br>(from OrderUp confirmation page)<pre>                    <example-order></example-order>
+					</pre></td></tr></tbody></table>Taxes: $<input id=taxes type=number><br>Fees: $<input id=fees type=number><br>Tip: <span id=fixedSpan hidden>$</span><input id=tip type=number><span id=percentageSpan>%</span> <input id=percentageCheckbox type=checkbox checked>Percentage<br><button id=split>Split</button> <button id=parseDom>Parse</button><p id=result></p><script src=index.js></script></body></html>
