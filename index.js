@@ -11829,7 +11829,7 @@ class ExampleOrder extends Polymer.Element {
         }
 
         getData() {
-            fetch("/data/exampleOrders.json")
+            fetch(window.location.href+"data/exampleOrders.json")
                 .then(stream => stream.body.getReader().read())
                 .then(({value, done}) => this.parse(value))
                 .then(orders => {
