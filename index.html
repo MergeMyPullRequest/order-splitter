@@ -1,8 +1,404 @@
-<html><head><title>Order Splitter</title><meta charset=UTF-8><meta name=theme-color content=#11923B><meta name=mobile-web-app-capable content=yes><meta name=application-name content=PSK><link rel=icon sizes=192x192 href=common/app-icon/ordersplitter192.png asnyc><link rel=icon sizes=16x16 href=common/app-icon/ordersplitter16.png><link rel=icon sizes=32x32 href=common/app-icon/ordersplitter32.png><meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-status-bar-style content=black><meta name=apple-mobile-web-app-title content="Order Splitter"><link rel=apple-touch-icon href=common/app-icon/ordersplitter152.png asnyc><meta name=msapplication-TileColor content=#3372DF><meta name=msapplication-TileImage content=common/app-icon/ordersplitter144.png async><script src=common/bower_components/webcomponentsjs/custom-elements-es5-adapter.js></script><style>
+<html><head><title>Order Splitter</title><meta charset=UTF-8><meta name=theme-color content=#11923B><meta name=mobile-web-app-capable content=yes><meta name=application-name content=PSK><link rel=icon sizes=192x192 href=ordersplitter192.png asnyc><link rel=icon sizes=16x16 href=ordersplitter16.png><link rel=icon sizes=32x32 href=ordersplitter32.png><meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-status-bar-style content=black><meta name=apple-mobile-web-app-title content="Order Splitter"><link rel=apple-touch-icon href=ordersplitter152.png asnyc><meta name=msapplication-TileColor content=#3372DF><meta name=msapplication-TileImage content=ordersplitter144.png async><script src=../bower_components/webcomponentsjs/custom-elements-es5-adapter.js></script><style>
 #breakdown, #breakdown th {
   border: 1px solid;
   border-collapse: collapse;
 }
 
-</style><link rel=manifest href=manifest.json></head><body><div hidden by-vulcanize><dom-module id=example-order assetpath="elements/"><template strip-whitespace><dom-repeat items=[[orders]]><template><span>[[item]]</span></template></dom-repeat><order-data id=data></order-data></template></dom-module></div><div align=right>0.5.2</div><div align=right>f3e3f70</div><div align=right>Tue May 23 2017 13:06:56 GMT-0400 (EDT)</div><table><tbody><tr><td>Order:</td></tr><tr><td><textarea id=textarea rows=20 cols=60></textarea></td><td>Example input:<br>(from OrderUp confirmation page)<pre>                    <example-order></example-order>
-					</pre></td></tr></tbody></table>Taxes: $<input id=taxes type=number><br>Fees: $<input id=fees type=number><br>Tip: <span id=fixedSpan hidden>$</span><input id=tip type=number><span id=percentageSpan>%</span> <input id=percentageCheckbox type=checkbox checked>Percentage<br><button id=split>Split</button> <button id=parseDom>Parse</button><p id=result></p><script src=index.js></script></body></html>
+</style><link rel=manifest href=manifest.json></head><body><div hidden by-vulcanize><dom-module id=iron-flex assetpath="../bower_components/iron-flex-layout/"><template><style>
+      .layout.horizontal,
+      .layout.vertical {
+        display: -ms-flexbox;
+        display: -webkit-flex;
+        display: flex;
+      }
+
+      .layout.inline {
+        display: -ms-inline-flexbox;
+        display: -webkit-inline-flex;
+        display: inline-flex;
+      }
+
+      .layout.horizontal {
+        -ms-flex-direction: row;
+        -webkit-flex-direction: row;
+        flex-direction: row;
+      }
+
+      .layout.vertical {
+        -ms-flex-direction: column;
+        -webkit-flex-direction: column;
+        flex-direction: column;
+      }
+
+      .layout.wrap {
+        -ms-flex-wrap: wrap;
+        -webkit-flex-wrap: wrap;
+        flex-wrap: wrap;
+      }
+
+      .layout.no-wrap {
+        -ms-flex-wrap: nowrap;
+        -webkit-flex-wrap: nowrap;
+        flex-wrap: nowrap;
+      }
+
+      .layout.center,
+      .layout.center-center {
+        -ms-flex-align: center;
+        -webkit-align-items: center;
+        align-items: center;
+      }
+
+      .layout.center-justified,
+      .layout.center-center {
+        -ms-flex-pack: center;
+        -webkit-justify-content: center;
+        justify-content: center;
+      }
+
+      .flex {
+        -ms-flex: 1 1 0.000000001px;
+        -webkit-flex: 1;
+        flex: 1;
+        -webkit-flex-basis: 0.000000001px;
+        flex-basis: 0.000000001px;
+      }
+
+      .flex-auto {
+        -ms-flex: 1 1 auto;
+        -webkit-flex: 1 1 auto;
+        flex: 1 1 auto;
+      }
+
+      .flex-none {
+        -ms-flex: none;
+        -webkit-flex: none;
+        flex: none;
+      }
+    </style></template></dom-module><dom-module id=iron-flex-reverse assetpath="../bower_components/iron-flex-layout/"><template><style>
+      .layout.horizontal-reverse,
+      .layout.vertical-reverse {
+        display: -ms-flexbox;
+        display: -webkit-flex;
+        display: flex;
+      }
+
+      .layout.horizontal-reverse {
+        -ms-flex-direction: row-reverse;
+        -webkit-flex-direction: row-reverse;
+        flex-direction: row-reverse;
+      }
+
+      .layout.vertical-reverse {
+        -ms-flex-direction: column-reverse;
+        -webkit-flex-direction: column-reverse;
+        flex-direction: column-reverse;
+      }
+
+      .layout.wrap-reverse {
+        -ms-flex-wrap: wrap-reverse;
+        -webkit-flex-wrap: wrap-reverse;
+        flex-wrap: wrap-reverse;
+      }
+    </style></template></dom-module><dom-module id=iron-flex-alignment assetpath="../bower_components/iron-flex-layout/"><template><style>
+      /**
+       * Alignment in cross axis.
+       */
+      .layout.start {
+        -ms-flex-align: start;
+        -webkit-align-items: flex-start;
+        align-items: flex-start;
+      }
+
+      .layout.center,
+      .layout.center-center {
+        -ms-flex-align: center;
+        -webkit-align-items: center;
+        align-items: center;
+      }
+
+      .layout.end {
+        -ms-flex-align: end;
+        -webkit-align-items: flex-end;
+        align-items: flex-end;
+      }
+
+      .layout.baseline {
+        -ms-flex-align: baseline;
+        -webkit-align-items: baseline;
+        align-items: baseline;
+      }
+
+      /**
+       * Alignment in main axis.
+       */
+      .layout.start-justified {
+        -ms-flex-pack: start;
+        -webkit-justify-content: flex-start;
+        justify-content: flex-start;
+      }
+
+      .layout.center-justified,
+      .layout.center-center {
+        -ms-flex-pack: center;
+        -webkit-justify-content: center;
+        justify-content: center;
+      }
+
+      .layout.end-justified {
+        -ms-flex-pack: end;
+        -webkit-justify-content: flex-end;
+        justify-content: flex-end;
+      }
+
+      .layout.around-justified {
+        -ms-flex-pack: distribute;
+        -webkit-justify-content: space-around;
+        justify-content: space-around;
+      }
+
+      .layout.justified {
+        -ms-flex-pack: justify;
+        -webkit-justify-content: space-between;
+        justify-content: space-between;
+      }
+
+      /**
+       * Self alignment.
+       */
+      .self-start {
+        -ms-align-self: flex-start;
+        -webkit-align-self: flex-start;
+        align-self: flex-start;
+      }
+
+      .self-center {
+        -ms-align-self: center;
+        -webkit-align-self: center;
+        align-self: center;
+      }
+
+      .self-end {
+        -ms-align-self: flex-end;
+        -webkit-align-self: flex-end;
+        align-self: flex-end;
+      }
+
+      .self-stretch {
+        -ms-align-self: stretch;
+        -webkit-align-self: stretch;
+        align-self: stretch;
+      }
+
+      .self-baseline {
+        -ms-align-self: baseline;
+        -webkit-align-self: baseline;
+        align-self: baseline;
+      }
+
+      /**
+       * multi-line alignment in main axis.
+       */
+      .layout.start-aligned {
+        -ms-flex-line-pack: start;  /* IE10 */
+        -ms-align-content: flex-start;
+        -webkit-align-content: flex-start;
+        align-content: flex-start;
+      }
+
+      .layout.end-aligned {
+        -ms-flex-line-pack: end;  /* IE10 */
+        -ms-align-content: flex-end;
+        -webkit-align-content: flex-end;
+        align-content: flex-end;
+      }
+
+      .layout.center-aligned {
+        -ms-flex-line-pack: center;  /* IE10 */
+        -ms-align-content: center;
+        -webkit-align-content: center;
+        align-content: center;
+      }
+
+      .layout.between-aligned {
+        -ms-flex-line-pack: justify;  /* IE10 */
+        -ms-align-content: space-between;
+        -webkit-align-content: space-between;
+        align-content: space-between;
+      }
+
+      .layout.around-aligned {
+        -ms-flex-line-pack: distribute;  /* IE10 */
+        -ms-align-content: space-around;
+        -webkit-align-content: space-around;
+        align-content: space-around;
+      }
+    </style></template></dom-module><dom-module id=iron-flex-factors assetpath="../bower_components/iron-flex-layout/"><template><style>
+      .flex,
+      .flex-1 {
+        -ms-flex: 1 1 0.000000001px;
+        -webkit-flex: 1;
+        flex: 1;
+        -webkit-flex-basis: 0.000000001px;
+        flex-basis: 0.000000001px;
+      }
+
+      .flex-2 {
+        -ms-flex: 2;
+        -webkit-flex: 2;
+        flex: 2;
+      }
+
+      .flex-3 {
+        -ms-flex: 3;
+        -webkit-flex: 3;
+        flex: 3;
+      }
+
+      .flex-4 {
+        -ms-flex: 4;
+        -webkit-flex: 4;
+        flex: 4;
+      }
+
+      .flex-5 {
+        -ms-flex: 5;
+        -webkit-flex: 5;
+        flex: 5;
+      }
+
+      .flex-6 {
+        -ms-flex: 6;
+        -webkit-flex: 6;
+        flex: 6;
+      }
+
+      .flex-7 {
+        -ms-flex: 7;
+        -webkit-flex: 7;
+        flex: 7;
+      }
+
+      .flex-8 {
+        -ms-flex: 8;
+        -webkit-flex: 8;
+        flex: 8;
+      }
+
+      .flex-9 {
+        -ms-flex: 9;
+        -webkit-flex: 9;
+        flex: 9;
+      }
+
+      .flex-10 {
+        -ms-flex: 10;
+        -webkit-flex: 10;
+        flex: 10;
+      }
+
+      .flex-11 {
+        -ms-flex: 11;
+        -webkit-flex: 11;
+        flex: 11;
+      }
+
+      .flex-12 {
+        -ms-flex: 12;
+        -webkit-flex: 12;
+        flex: 12;
+      }
+    </style></template></dom-module><dom-module id=iron-positioning assetpath="../bower_components/iron-flex-layout/"><template><style>
+      .block {
+        display: block;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      .invisible {
+        visibility: hidden !important;
+      }
+
+      .relative {
+        position: relative;
+      }
+
+      .fit {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+      }
+
+      body.fullbleed {
+        margin: 0;
+        height: 100vh;
+      }
+
+      .scroll {
+        -webkit-overflow-scrolling: touch;
+        overflow: auto;
+      }
+
+      /* fixed position */
+      .fixed-bottom,
+      .fixed-left,
+      .fixed-right,
+      .fixed-top {
+        position: fixed;
+      }
+
+      .fixed-top {
+        top: 0;
+        left: 0;
+        right: 0;
+      }
+
+      .fixed-right {
+        top: 0;
+        right: 0;
+        bottom: 0;
+      }
+
+      .fixed-bottom {
+        right: 0;
+        bottom: 0;
+        left: 0;
+      }
+
+      .fixed-left {
+        top: 0;
+        bottom: 0;
+        left: 0;
+      }
+    </style></template></dom-module><dom-module id=example-order assetpath="../elements/"><template strip-whitespace><style include="iron-flex iron-flex-alignment"></style><style>
+            .pointer {
+                cursor: pointer;
+            }
+        </style><div class="horizontal layout justified"><div class="vertical layout"><dom-repeat items=[[orderTypes]]><template><div class=pointer on-click=_selectItem>[[item]]</div></template></dom-repeat></div><div class="vertical layout"><dom-repeat items=[[selectedOrder]]><template><span>[[item]]</span></template></dom-repeat></div><array-selector id=selector items={{orders}} selected={{selectedOrder}}></array-selector></div></template></dom-module><style>
+            .wrapper {
+                display: grid;
+                grid-gap: 10px;
+                grid-template-columns: 500px;
+            }
+            .header {
+                grid-row-start: 1;
+                grid-row-end: 2;
+            }
+            .body {
+                grid-row-start: 2;
+                grid-row-end: 3;
+            }
+            .order-input {
+                grid-column-start: 1;
+                grid-column-end: 2;
+            }
+            .order-example {
+                grid-column-start: 2;
+                grid-column-end: 3;
+            }
+        </style></div><div align=right>0.5.2</div><div align=right>0382c08</div><div align=right>Mon May 29 2017 19:37:16 GMT-0400 (EDT)</div><div class=wrapper><div class="order-input header">Order:</div><div class="order-input body"><textarea id=textarea rows=20 cols=60></textarea></div><div class="order-example header">Example input:<br>(from OrderUp confirmation page)</div><div class="order-example body"><pre>                    <example-order></example-order>
+                </pre></div></div>Taxes: $<input id=taxes type=number><br>Fees: $<input id=fees type=number><br>Tip: <span id=fixedSpan hidden>$</span><input id=tip type=number><span id=percentageSpan>%</span> <input id=percentageCheckbox type=checkbox checked>Percentage<br><button id=split>Split</button> <button id=parseDom>Parse</button><p id=result></p><script src=index.js></script></body></html>
