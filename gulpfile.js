@@ -110,8 +110,7 @@ gulp.task('ext', ['clean-ext', 'default'], function() {
 });
 
 gulp.task('clean-ext', function() {
-    gulp.src(extDir)
-    .pipe(clean());
+    return gulp.src(extDir).pipe(clean());
 });
 
 gulp.task('lint', function () {
