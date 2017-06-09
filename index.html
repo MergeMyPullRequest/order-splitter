@@ -2083,12 +2083,12 @@
             span[slot="prefix"] {
                 padding-right: 2px;
             }
-        </style><div><textarea id=textarea rows=20 cols=60 placeholder="Paste order details here" autofocus></textarea><paper-input allowed-pattern=[0-9] label=Taxes id=tax><span slot=prefix>$</span></paper-input><paper-input allowed-pattern=[0-9] label=Fees id=fee><span slot=prefix>$</span></paper-input><div id=tipContainer><paper-input allowed-pattern=[0-9] label=Tip id=tip><span slot=prefix class$=[[_computeTipDollarClass(usePercentForTip)]]>$</span> <span slot=suffix class$=[[_computeTipPercentClass(usePercentForTip)]]>%</span></paper-input><paper-checkbox checked={{usePercentForTip}} on-tap=_onCheckboxTap>Percentage</paper-checkbox></div><paper-button id=split on-tap=_onSplitButtonTap>Split</paper-button><paper-button id=parseDom disabled on-tap=_requestOrder>Parse dom? wut?</paper-button></div></template></dom-module><style>
+        </style><div><textarea id=textarea rows=20 cols=60 placeholder="Paste order details here" autofocus></textarea><paper-input type=number label=Taxes id=tax><span slot=prefix>$</span></paper-input><paper-input type=number label=Fees id=fee><span slot=prefix>$</span></paper-input><div id=tipContainer><paper-input type=number label=Tip id=tip><span slot=prefix class$=[[_computeTipDollarClass(usePercentForTip)]]>$</span> <span slot=suffix class$=[[_computeTipPercentClass(usePercentForTip)]]>%</span></paper-input><paper-checkbox checked={{usePercentForTip}} on-tap=_onCheckboxTap>Percentage</paper-checkbox></div><paper-button id=split on-tap=_onSplitButtonTap>Split</paper-button><paper-button id=parseDom disabled on-tap=_requestOrder>Parse dom? wut?</paper-button></div></template></dom-module><style>
             .wrapper {
                 display: grid;
                 grid-gap: 10px;
                 /*grid-template-columns: 500px;*/
                 grid-template-columns: repeat(auto-fill, minmax(200px, 500px));
             }
-        </style></div><div align=right>0.5.2</div><div align=right>c235269</div><div align=right>Fri Jun 09 2017 13:40:10 GMT-0400 (EDT)</div><div class=wrapper><div><div>Example input:<br>(from OrderUp confirmation page)</div><div><pre>                        <example-order></example-order>
+        </style></div><div align=right>0.6.0</div><div align=right>7abb3b8</div><div align=right>Fri Jun 09 2017 15:36:12 GMT-0400 (EDT)</div><div class=wrapper><div><div>Example input:<br>(from OrderUp confirmation page)</div><div><pre>                        <example-order></example-order>
                     </pre></div></div><div><order-input></order-input></div></div><p id=result></p><script src=index.js></script></body></html>

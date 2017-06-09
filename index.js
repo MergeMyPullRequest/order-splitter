@@ -123,16 +123,12 @@ class CsvParser {
 };
 window.onload = init;
 
-const orderUpParser = new OrderUpParser();
-const queryStringParser = new QueryStringParser();
-const csvParser = new CsvParser();
-
 function init () {
   // check for URL query parameters
     if (window.location.search) {
         var queryString = window.location.search.substring(1); // remove prefixing '?'
         handleOrder(function () {
-            return queryStringParser.parse(queryString).split();
+            return new QueryStringParser().parse(queryString).split();
         });
     }
 }
@@ -15270,11 +15266,11 @@ defineCustomElement('order-input', class extends Polymer.Element {
 
                 handleOrder(function() {
                     try {
-                        return orderUpParser.parse(text, fee, tax, tip, isTipPercentage).split();
+                        return new OrderUpParser().parse(text, fee, tax, tip, isTipPercentage).split();
                     } catch(e) {
                         console.error('OrderUp parser failed', e);
                         console.log('trying csv parser');
-                        return csvParser.parse(text).split();
+                        return new CsvParser().parse(text).split();
                     }
                 });
             }
