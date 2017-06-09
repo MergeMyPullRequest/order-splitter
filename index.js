@@ -15263,7 +15263,7 @@ defineCustomElement('order-input', class extends Polymer.Element {
             }
             _onSplitButtonTap() {
                 var text = this.$.textarea.value;
-                var tax = this.$.tax.value;
+                var tax = Number(this.$.tax.value);
                 var fee = Number(this.$.fee.value);
                 var tip = Number(this.$.tip.value);
                 var isTipPercentage = this.usePercentForTip;
