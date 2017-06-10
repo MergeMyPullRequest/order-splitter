@@ -87,7 +87,7 @@ gulp.task('vulcanize', ['clean'], function() {
 
         .pipe(replace('INSERT_VERSION', version))
         .pipe(replace('INSERT_SHA', git.short()))
-        .pipe(replace('INSERT_BUILD_TIME', ''+new Date()))
+        .pipe(replace('INSERT_BUILD_TIME', new Date().toLocaleString()))
         .pipe(gulp.dest(deployDir));
 });
 
