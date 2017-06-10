@@ -1,7 +1,7 @@
 let CACHE_NAME = 'order-splitter-cache-INSERT_VERSION';
 let urlsToCache = [
-    // 'index.html', 
-    // 'index.js'
+    'index.html', 
+    'index.js'
 ].map(f => './'+f);
 
 self.addEventListener('install', function(event) {
