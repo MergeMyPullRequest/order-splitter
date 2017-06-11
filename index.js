@@ -57,38 +57,30 @@ class OrderUpParser {
      * @param {boolean} isTipPercentage - True if the tip is a percentage as opposed to a fixed value
      * @return {Order} An order parsed from the OrderUp.com confirmation summary
      */
-    parse(orderUpText, fee, tax, tip, isTipPercentage) {
-        // TODO: check if the number at the beginning of the line affects the item cost
-        // example: 2 Chicken $4.00
-        //   should the cost for the person be $4 or $8?
-
+    parse(orderUpText, fee=0, tax=0, tip=0, isTipPercentage=false) {
         let order = new Order()
             .withNonTaxedFees(fee)
             .withTax(tax)
             .withTip(tip, isTipPercentage);
-        var label = 'Label for:';
-        var itemCost = null;
-        var array = orderUpText.split('\n');
 
-        for (var i = 0; i < array.length; i++) {
-            var line = array[i].trim();
-            line = line.replace(/\s+/g, ' '); // replace all whitespace with single space
+        var lines = orderUpText.split('\n');
 
-            if (!itemCost) {
-                var dollarIndex = line.lastIndexOf('$');
-                if (dollarIndex > -1) {
-                    itemCost = Number(line.substring(dollarIndex + 1, line.length));
-                }
-                continue;
+        lines.reduce((lastItemCost, line) => {
+            let itemCostMatch, nameMatch;
+
+            if (itemCostMatch = line.match('.*\\$([0-9.]+)')) {
+                let itemCost = Number(itemCostMatch[1]);
+                return itemCost;
             }
 
-            var labelIndex = line.indexOf(label);
-            if (labelIndex > -1) {
-                var name = line.substring(labelIndex + label.length, line.length);
-                order.withPerson(name, itemCost);
-                itemCost = null;
+            if (nameMatch = line.match('.*Label for:(.*)')) {
+                let name = nameMatch[1];
+                order.withPerson(name, lastItemCost);
+                return;
             }
-        }
+
+            return lastItemCost;
+        }, null);
 
         return order;
     }
@@ -347,21 +339,19 @@ class Order {
     }
 
     split() {
-        let totals = new Map();
-        this.subTotal = 0;
-        for(let [name, price] of this.people.entries()) {
-            this.subTotal += price;
-        }
+
+        this.subTotal = Array.from(this.people.values()).reduce((sum, value) => sum+value);
         this.subTotal += this.taxedFees;
-        for(let [name, price] of this.people.entries()) {
+
+        this.totals = new Map();
+        for (let [name, price] of this.people.entries()) {
             let totalForPerson = price;
             totalForPerson += price * this.taxPercent;
             totalForPerson += price * this.tipPercent;
             totalForPerson += this.feesPerPerson;
-            totals.set(name, totalForPerson);
+            this.totals.set(name, totalForPerson);
         }
-        this.totals = totals;
-        let totalPrice = Array.from(totals.values()).reduce((acc, val) => acc+val);
+        let totalPrice = Array.from(this.totals.values()).reduce((acc, val) => acc+val);
         if(Math.round(totalPrice*100) != Math.round(this.total*100)) {
             throw new Error('Everyone\'s share does not add up to total');
         }
@@ -15250,18 +15240,16 @@ defineCustomElement('order-input', class extends Polymer.Element {
                 this.usePercentForTip = JSON.parse(localStorage.getItem('usePercentForTip'));
             }
             _computeTipPercentClass() {
-                console.debug('_computeTipPercentClass()');
                 return this.usePercentForTip ? '' : 'hidden';
             }
             _computeTipDollarClass() {
-                console.debug('_computeTipDollarClass()');
                 return !this.usePercentForTip ? '' : 'hidden';
             }
             _onSplitButtonTap() {
                 var text = this.$.textarea.value;
-                var tax = Number(this.$.tax.value);
-                var fee = Number(this.$.fee.value);
-                var tip = Number(this.$.tip.value);
+                var tax = Number(this.$.tax.value || 0);
+                var fee = Number(this.$.fee.value || 0);
+                var tip = Number(this.$.tip.value || 0);
                 var isTipPercentage = this.usePercentForTip;
 
                 handleOrder(function() {
@@ -15288,3 +15276,5 @@ defineCustomElement('order-input', class extends Polymer.Element {
                 static get is() { return tag; }
             });
         };
+// this is to help with debugging any SW caching issues if they appear
+            console.debug('script version: 87e411d');
