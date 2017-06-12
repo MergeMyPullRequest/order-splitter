@@ -113,148 +113,19 @@ class CsvParser {
         return order;
     }
 };
-window.onload = init;
-
-function init () {
+window.onload = function() {
   // check for URL query parameters
     if (window.location.search) {
         var queryString = window.location.search.substring(1); // remove prefixing '?'
-        handleOrder(function () {
-            return new QueryStringParser().parse(queryString).split();
-        });
+        var order = new QueryStringParser().parse(queryString).split();
+        OrderSplitResults.show(order);
     }
-}
+};
 
-function handleOrder (parserFunction) {
-    try {
-        var order = parserFunction();
-        display(order);
-    } catch (error) {
-        alert(error);
-        console.error(error);
-    }
-}
-
-function display (order) {
-
-    var calculationsTable = '<table>' +
-      '<tr><td>Subtotal:</td><td>$' + prettifyNumber(order.subTotal) + '</td><td>(user input; sum of item costs)</td></tr>' +
-      '<tr><td>Tax:</td><td>$' + prettifyNumber(order.tax) + '</td><td>(user input)</td></tr>' +
-      '<tr><td>Fees:</td><td>$' + prettifyNumber(order.fee) + '</td><td>(user input)</td></tr>' +
-      '<tr><td>Tip:</td><td>$' + prettifyNumber(order.tipDollars) + '</td><td>(' + (order.isTipPercentage ? 'tip percent * subtotal' : 'user input') + ')</td></tr>' +
-      '<tr><td>Total:</td><td>$' + prettifyNumber(order.total) + '</td><td>(subtotal + tax + fees + tip)</td></tr>' +
-      '<tr><td>Fees per Person:</td><td>$' + prettifyNumber(order.feesPerPerson) + '</td><td>(fees / number of people)</td></tr>' +
-      '<tr><td>Tax (Percent):</td><td>' + order.taxPercentDisplay + '%</td><td>(tax / subtotal)</td></tr>' +
-      '<tr><td>Tip (Percent):</td><td>' + order.tipPercentDisplay + '%</td><td>(' + (order.isTipPercentage ? 'user input' : 'tip / subtotal') + ')</td></tr>' +
-      '</table>';
-
-    var html =
-      '<hr>' +
-      calculationsTable + '<br>' +
-      makeBreakdownDisplay(order) + '<br>' +
-      'Publish the following:<br>' +
-      '<pre>' + makeTotalsDisplay(order.totals) + '</pre>' +
-      makeHyperlink(order.tax, order.fee, order.tip, order.people);
-
-    document.getElementById('result').innerHTML = html;
-}
-
-/**
- * Returns a string of a number in the format "#.##"
- * @example
- * prettifyNumber(12); // returns "12.00"
- * @param {number} n - The number to prettify
- * @returns {string} A string of a number rounded and padded to 2 decimal places
- */
-function prettifyNumber (n) {
-    n = Math.round(n * 100) / 100; // round to 2 decimal places
-
-  // pad to 2 decimal places if necessary
-    var s = n.toString();
-
-    if (s.indexOf('.') === -1) {
-        s += '.';
-    }
-
-    while (s.length < s.indexOf('.') + 3) {
-        s += '0';
-    }
-
-    return s;
-}
-
-/**
- * Returns a listing of names to split costs
- * @param {object} totals - The totals property from the Order
- * @returns {string} A view mapping names to split costs
- */
-function makeTotalsDisplay (totals) {
-  // get length of longest name
-    var longestName = -1;
-    for (var [person, price] of totals) {
-        longestName = Math.max(person.length, longestName);
-    }
-
-  // add 1 to longest name for a space after name
-    longestName += 1;
-
-    var output = '';
-    var name;
-    for (let [person, price] of totals) {
-        let name = person;
-        for (var i = person.length; i < longestName; i++) {
-            name += ' ';
-        }
-        output += name + '$' + prettifyNumber(price) + '<br>';
-    }
-
-    return output;
-}
-
-/**
- * Returns a hyperlink to this split order.
- * @param {number} tax - amount of taxes
- * @param {fee} fee - amount of fees
- * @param {number} tip - tip
- * @param {Object} personItemCosts - map of person name to item costs
- * @return {string} The hyperlink to this order
- */
-function makeHyperlink (tax, fee, tip, personItemCosts) {
-    var link = window.location.origin + window.location.pathname;
-    if (link.indexOf('index.html') === -1) {
-        link += 'index.html';
-    }
-
-    if (tip !== 0) tip = prettifyNumber(tip);
-
-    link += '?tax=' + tax + '&fee=' + fee + '&tip=' + tip;
-
-    for (var [person, val] of personItemCosts) {
-        link += '&' + encodeURIComponent(person) + '=' + prettifyNumber(val);
-    }
-
-    return '<a href=' + link + '>' + link + '</a>';
-}
-
-/**
- * Returns a display breaking down the Order split calculations
- * @param {Order} order - the Order to breakdown
- * @returns {string} A view of the Order breakdown
- */
-function makeBreakdownDisplay (order) {
-    var breakdown = '<table id="breakdown">';
-    breakdown += '<tr><th>Person</th><th>Item Costs</th><th>Tax</th><th>Tip</th><th>Fees Per Person</th><th>Person Total</th></tr>';
-    for (var [person, price] of order.people) {
-        breakdown += '<tr><td>' + person + '</td><td>' +
-        price + '</td><td> + ' + // item costs
-        price + ' * ' + order.taxPercent + '</td><td> + ' + // taxes
-        price + ' * ' + order.tipPercent + '</td><td> + ' + // tip
-        order.feesPerPerson + '</td><td> = ' +
-        prettifyNumber(order.totals.get(person)) + '</td></tr>';
-    }
-
-    breakdown += '</table>';
-    return breakdown;
+function defineCustomElement(tag, elementClass) {
+    customElements.define(tag, class extends elementClass {
+        static get is() { return tag; }
+    });
 };
 class Order {
     constructor() {
@@ -358,6 +229,7 @@ class Order {
         return this;
     }
 
+    // not used. we should delete this
     toJSON() {
         let ret = {};
         ret.people = Array.from(this.people);
@@ -369,6 +241,7 @@ class Order {
         return ret;
     }
     
+    // not used. we should delete this
     static fromJSON(json) {
         let order = new Order();
         order.people = new Map(json.people);
@@ -15252,15 +15125,15 @@ defineCustomElement('order-input', class extends Polymer.Element {
                 var tip = Number(this.$.tip.value || 0);
                 var isTipPercentage = this.usePercentForTip;
 
-                handleOrder(function() {
-                    try {
-                        return new OrderUpParser().parse(text, fee, tax, tip, isTipPercentage).split();
-                    } catch(e) {
-                        console.error('OrderUp parser failed', e);
-                        console.log('trying csv parser');
-                        return new CsvParser().parse(text).split();
-                    }
-                });
+                var order;
+                try {
+                    order =  new OrderUpParser().parse(text, fee, tax, tip, isTipPercentage).split();
+                } catch(e) {
+                    console.error('OrderUp parser failed', e);
+                    console.log('trying csv parser');
+                    order =  new CsvParser().parse(text).split();
+                }
+                OrderSplitResults.show(order);
             }
             _requestOrder() {
                 // this method makes no sense to me.
@@ -15271,10 +15144,806 @@ defineCustomElement('order-input', class extends Polymer.Element {
                 localStorage.setItem('usePercentForTip', JSON.stringify(!this.usePercentForTip));
             }
         });
-        function defineCustomElement(tag, elementClass) {
-            customElements.define(tag, class extends elementClass {
-                static get is() { return tag; }
-            });
-        };
+/**
+   * `Polymer.NeonAnimatableBehavior` is implemented by elements containing animations for use with
+   * elements implementing `Polymer.NeonAnimationRunnerBehavior`.
+   * @polymerBehavior
+   */
+  Polymer.NeonAnimatableBehavior = {
+
+    properties: {
+
+      /**
+       * Animation configuration. See README for more info.
+       */
+      animationConfig: {
+        type: Object
+      },
+
+      /**
+       * Convenience property for setting an 'entry' animation. Do not set `animationConfig.entry`
+       * manually if using this. The animated node is set to `this` if using this property.
+       */
+      entryAnimation: {
+        observer: '_entryAnimationChanged',
+        type: String
+      },
+
+      /**
+       * Convenience property for setting an 'exit' animation. Do not set `animationConfig.exit`
+       * manually if using this. The animated node is set to `this` if using this property.
+       */
+      exitAnimation: {
+        observer: '_exitAnimationChanged',
+        type: String
+      }
+
+    },
+
+    _entryAnimationChanged: function() {
+      this.animationConfig = this.animationConfig || {};
+      this.animationConfig['entry'] = [{
+        name: this.entryAnimation,
+        node: this
+      }];
+    },
+
+    _exitAnimationChanged: function() {
+      this.animationConfig = this.animationConfig || {};
+      this.animationConfig['exit'] = [{
+        name: this.exitAnimation,
+        node: this
+      }];
+    },
+
+    _copyProperties: function(config1, config2) {
+      // shallowly copy properties from config2 to config1
+      for (var property in config2) {
+        config1[property] = config2[property];
+      }
+    },
+
+    _cloneConfig: function(config) {
+      var clone = {
+        isClone: true
+      };
+      this._copyProperties(clone, config);
+      return clone;
+    },
+
+    _getAnimationConfigRecursive: function(type, map, allConfigs) {
+      if (!this.animationConfig) {
+        return;
+      }
+
+      if(this.animationConfig.value && typeof this.animationConfig.value === 'function') {
+      	this._warn(this._logf('playAnimation', "Please put 'animationConfig' inside of your components 'properties' object instead of outside of it."));
+      	return;
+      }
+
+      // type is optional
+      var thisConfig;
+      if (type) {
+        thisConfig = this.animationConfig[type];
+      } else {
+        thisConfig = this.animationConfig;
+      }
+
+      if (!Array.isArray(thisConfig)) {
+        thisConfig = [thisConfig];
+      }
+
+      // iterate animations and recurse to process configurations from child nodes
+      if (thisConfig) {
+        for (var config, index = 0; config = thisConfig[index]; index++) {
+          if (config.animatable) {
+            config.animatable._getAnimationConfigRecursive(config.type || type, map, allConfigs);
+          } else {
+            if (config.id) {
+              var cachedConfig = map[config.id];
+              if (cachedConfig) {
+                // merge configurations with the same id, making a clone lazily
+                if (!cachedConfig.isClone) {
+                  map[config.id] = this._cloneConfig(cachedConfig)
+                  cachedConfig = map[config.id];
+                }
+                this._copyProperties(cachedConfig, config);
+              } else {
+                // put any configs with an id into a map
+                map[config.id] = config;
+              }
+            } else {
+              allConfigs.push(config);
+            }
+          }
+        }
+      }
+    },
+
+    /**
+     * An element implementing `Polymer.NeonAnimationRunnerBehavior` calls this method to configure
+     * an animation with an optional type. Elements implementing `Polymer.NeonAnimatableBehavior`
+     * should define the property `animationConfig`, which is either a configuration object
+     * or a map of animation type to array of configuration objects.
+     */
+    getAnimationConfig: function(type) {
+      var map = {};
+      var allConfigs = [];
+      this._getAnimationConfigRecursive(type, map, allConfigs);
+      // append the configurations saved in the map to the array
+      for (var key in map) {
+        allConfigs.push(map[key]);
+      }
+      return allConfigs;
+    }
+
+  };
+/**
+   * `Polymer.NeonAnimationRunnerBehavior` adds a method to run animations.
+   *
+   * @polymerBehavior Polymer.NeonAnimationRunnerBehavior
+   */
+  Polymer.NeonAnimationRunnerBehaviorImpl = {
+
+    _configureAnimations: function(configs) {
+      var results = [];
+      if (configs.length > 0) {
+        for (var config, index = 0; config = configs[index]; index++) {
+          var neonAnimation = document.createElement(config.name);
+          // is this element actually a neon animation?
+          if (neonAnimation.isNeonAnimation) {
+            var result = null;
+            // configuration or play could fail if polyfills aren't loaded
+            try {
+              result = neonAnimation.configure(config);
+              // Check if we have an Effect rather than an Animation
+              if (typeof result.cancel != 'function') {
+                result = document.timeline.play(result);
+              }
+            } catch (e) {
+              result = null;
+              console.warn('Couldnt play', '(', config.name, ').', e);
+            }
+            if (result) {
+              results.push({
+                neonAnimation: neonAnimation,
+                config: config,
+                animation: result,
+              });
+            }
+          } else {
+            console.warn(this.is + ':', config.name, 'not found!');
+          }
+        }
+      }
+      return results;
+    },
+
+    _shouldComplete: function(activeEntries) {
+      var finished = true;
+      for (var i = 0; i < activeEntries.length; i++) {
+        if (activeEntries[i].animation.playState != 'finished') {
+          finished = false;
+          break;
+        }
+      }
+      return finished;
+    },
+
+    _complete: function(activeEntries) {
+      for (var i = 0; i < activeEntries.length; i++) {
+        activeEntries[i].neonAnimation.complete(activeEntries[i].config);
+      }
+      for (var i = 0; i < activeEntries.length; i++) {
+        activeEntries[i].animation.cancel();
+      }
+    },
+
+    /**
+     * Plays an animation with an optional `type`.
+     * @param {string=} type
+     * @param {!Object=} cookie
+     */
+    playAnimation: function(type, cookie) {
+      var configs = this.getAnimationConfig(type);
+      if (!configs) {
+        return;
+      }
+      this._active = this._active || {};
+      if (this._active[type]) {
+        this._complete(this._active[type]);
+        delete this._active[type];
+      }
+
+      var activeEntries = this._configureAnimations(configs);
+
+      if (activeEntries.length == 0) {
+        this.fire('neon-animation-finish', cookie, {bubbles: false});
+        return;
+      }
+
+      this._active[type] = activeEntries;
+
+      for (var i = 0; i < activeEntries.length; i++) {
+        activeEntries[i].animation.onfinish = function() {
+          if (this._shouldComplete(activeEntries)) {
+            this._complete(activeEntries);
+            delete this._active[type];
+            this.fire('neon-animation-finish', cookie, {bubbles: false});
+          }
+        }.bind(this);
+      }
+    },
+
+    /**
+     * Cancels the currently running animations.
+     */
+    cancelAnimation: function() {
+      for (var k in this._animations) {
+        this._animations[k].cancel();
+      }
+      this._animations = {};
+    }
+  };
+
+  /** @polymerBehavior Polymer.NeonAnimationRunnerBehavior */
+  Polymer.NeonAnimationRunnerBehavior = [
+    Polymer.NeonAnimatableBehavior,
+    Polymer.NeonAnimationRunnerBehaviorImpl
+  ];
+/**
+   * Use `Polymer.NeonAnimationBehavior` to implement an animation.
+   * @polymerBehavior
+   */
+  Polymer.NeonAnimationBehavior = {
+
+    properties: {
+
+      /**
+       * Defines the animation timing.
+       */
+      animationTiming: {
+        type: Object,
+        value: function() {
+          return {
+            duration: 500,
+            easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+            fill: 'both'
+          }
+        }
+      }
+
+    },
+
+    /**
+     * Can be used to determine that elements implement this behavior.
+     */
+    isNeonAnimation: true,
+
+    /**
+     * Do any animation configuration here.
+     */
+    // configure: function(config) {
+    // },
+
+    created: function() {
+      if (!document.body.animate) {
+        console.warn('No web animations detected. This element will not' +
+            ' function without a web animations polyfill.');
+      }
+    },
+
+    /**
+     * Returns the animation timing by mixing in properties from `config` to the defaults defined
+     * by the animation.
+     */
+    timingFromConfig: function(config) {
+      if (config.timing) {
+        for (var property in config.timing) {
+          this.animationTiming[property] = config.timing[property];
+        }
+      }
+      return this.animationTiming;
+    },
+
+    /**
+     * Sets `transform` and `transformOrigin` properties along with the prefixed versions.
+     */
+    setPrefixedProperty: function(node, property, value) {
+      var map = {
+        'transform': ['webkitTransform'],
+        'transformOrigin': ['mozTransformOrigin', 'webkitTransformOrigin']
+      };
+      var prefixes = map[property];
+      for (var prefix, index = 0; prefix = prefixes[index]; index++) {
+        node.style[prefix] = value;
+      }
+      node.style[property] = value;
+    },
+
+    /**
+     * Called when the animation finishes.
+     */
+    complete: function() {}
+
+  };
+Polymer({
+
+    is: 'fade-in-animation',
+
+    behaviors: [
+      Polymer.NeonAnimationBehavior
+    ],
+
+    configure: function(config) {
+      var node = config.node;
+      this._effect = new KeyframeEffect(node, [
+        {'opacity': '0'},
+        {'opacity': '1'}
+      ], this.timingFromConfig(config));
+      return this._effect;
+    }
+
+  });
+Polymer({
+
+    is: 'fade-out-animation',
+
+    behaviors: [
+      Polymer.NeonAnimationBehavior
+    ],
+
+    configure: function(config) {
+      var node = config.node;
+      this._effect = new KeyframeEffect(node, [
+        {'opacity': '1'},
+        {'opacity': '0'}
+      ], this.timingFromConfig(config));
+      return this._effect;
+    }
+
+  });
+Polymer({
+      is: 'paper-tooltip',
+
+      hostAttributes: {
+        role: 'tooltip',
+        tabindex: -1
+      },
+
+      behaviors: [
+        Polymer.NeonAnimationRunnerBehavior
+      ],
+
+      properties: {
+        /**
+         * The id of the element that the tooltip is anchored to. This element
+         * must be a sibling of the tooltip.
+         */
+        for: {
+          type: String,
+          observer: '_findTarget'
+        },
+
+        /**
+         * Set this to true if you want to manually control when the tooltip
+         * is shown or hidden.
+         */
+        manualMode: {
+          type: Boolean,
+          value: false,
+          observer: '_manualModeChanged'
+        },
+
+        /**
+         * Positions the tooltip to the top, right, bottom, left of its content.
+         */
+        position: {
+          type: String,
+          value: 'bottom'
+        },
+
+        /**
+         * If true, no parts of the tooltip will ever be shown offscreen.
+         */
+        fitToVisibleBounds: {
+          type: Boolean,
+          value: false
+        },
+
+        /**
+         * The spacing between the top of the tooltip and the element it is
+         * anchored to.
+         */
+        offset: {
+          type: Number,
+          value: 14
+        },
+
+        /**
+         * This property is deprecated, but left over so that it doesn't
+         * break exiting code. Please use `offset` instead. If both `offset` and
+         * `marginTop` are provided, `marginTop` will be ignored.
+         * @deprecated since version 1.0.3
+         */
+        marginTop: {
+          type: Number,
+          value: 14
+        },
+
+        /**
+         * The delay that will be applied before the `entry` animation is
+         * played when showing the tooltip.
+         */
+        animationDelay: {
+          type: Number,
+          value: 500
+        },
+
+        /**
+         * The entry and exit animations that will be played when showing and
+         * hiding the tooltip. If you want to override this, you must ensure
+         * that your animationConfig has the exact format below.
+         */
+        animationConfig: {
+          type: Object,
+          value: function() {
+            return {
+              'entry': [{
+                name: 'fade-in-animation',
+                node: this,
+                timing: {delay: 0}
+              }],
+              'exit': [{
+                name: 'fade-out-animation',
+                node: this
+              }]
+            }
+          }
+        },
+
+        _showing: {
+          type: Boolean,
+          value: false
+        }
+      },
+
+      listeners: {
+        'neon-animation-finish': '_onAnimationFinish',
+      },
+
+      /**
+       * Returns the target element that this tooltip is anchored to. It is
+       * either the element given by the `for` attribute, or the immediate parent
+       * of the tooltip.
+       */
+      get target () {
+        var parentNode = Polymer.dom(this).parentNode;
+        // If the parentNode is a document fragment, then we need to use the host.
+        var ownerRoot = Polymer.dom(this).getOwnerRoot();
+
+        var target;
+        if (this.for) {
+          target = Polymer.dom(ownerRoot).querySelector('#' + this.for);
+        } else {
+          target = parentNode.nodeType == Node.DOCUMENT_FRAGMENT_NODE ?
+              ownerRoot.host : parentNode;
+        }
+
+        return target;
+      },
+
+      attached: function() {
+        this._findTarget();
+      },
+
+      detached: function() {
+        if (!this.manualMode)
+          this._removeListeners();
+      },
+
+      show: function() {
+        // If the tooltip is already showing, there's nothing to do.
+        if (this._showing)
+          return;
+
+        if (Polymer.dom(this).textContent.trim() === ''){
+          // Check if effective children are also empty
+          var allChildrenEmpty = true;
+          var effectiveChildren = Polymer.dom(this).getEffectiveChildNodes();
+          for (var i = 0; i < effectiveChildren.length; i++) {
+            if (effectiveChildren[i].textContent.trim() !== '') {
+              allChildrenEmpty = false;
+              break;
+            }
+          }
+          if (allChildrenEmpty) {
+            return;
+          }
+        }
+
+
+        this.cancelAnimation();
+        this._showing = true;
+        this.toggleClass('hidden', false, this.$.tooltip);
+        this.updatePosition();
+
+        this.animationConfig.entry[0].timing = this.animationConfig.entry[0].timing || {};
+        this.animationConfig.entry[0].timing.delay = this.animationDelay;
+        this._animationPlaying = true;
+        this.playAnimation('entry');
+      },
+
+      hide: function() {
+        // If the tooltip is already hidden, there's nothing to do.
+        if (!this._showing) {
+          return;
+        }
+
+        // If the entry animation is still playing, don't try to play the exit
+        // animation since this will reset the opacity to 1. Just end the animation.
+        if (this._animationPlaying) {
+          this.cancelAnimation();
+          this._showing = false;
+          this._onAnimationFinish();
+          return;
+        }
+
+        this._showing = false;
+        this._animationPlaying = true;
+        this.playAnimation('exit');
+      },
+
+      updatePosition: function() {
+        if (!this._target || !this.offsetParent)
+          return;
+
+        var offset = this.offset;
+        // If a marginTop has been provided by the user (pre 1.0.3), use it.
+        if (this.marginTop != 14 && this.offset == 14)
+          offset = this.marginTop;
+
+        var parentRect = this.offsetParent.getBoundingClientRect();
+        var targetRect = this._target.getBoundingClientRect();
+        var thisRect = this.getBoundingClientRect();
+
+        var horizontalCenterOffset = (targetRect.width - thisRect.width) / 2;
+        var verticalCenterOffset = (targetRect.height - thisRect.height) / 2;
+
+        var targetLeft = targetRect.left - parentRect.left;
+        var targetTop = targetRect.top - parentRect.top;
+
+        var tooltipLeft, tooltipTop;
+
+        switch (this.position) {
+          case 'top':
+            tooltipLeft = targetLeft + horizontalCenterOffset;
+            tooltipTop = targetTop - thisRect.height - offset;
+            break;
+          case 'bottom':
+            tooltipLeft = targetLeft + horizontalCenterOffset;
+            tooltipTop = targetTop + targetRect.height + offset;
+            break;
+          case 'left':
+            tooltipLeft = targetLeft - thisRect.width - offset;
+            tooltipTop = targetTop + verticalCenterOffset;
+            break;
+          case 'right':
+            tooltipLeft = targetLeft + targetRect.width + offset;
+            tooltipTop = targetTop + verticalCenterOffset;
+            break;
+        }
+
+        // TODO(noms): This should use IronFitBehavior if possible.
+        if (this.fitToVisibleBounds) {
+          // Clip the left/right side
+          if (parentRect.left + tooltipLeft + thisRect.width > window.innerWidth) {
+            this.style.right = '0px';
+            this.style.left = 'auto';
+          } else {
+            this.style.left = Math.max(0, tooltipLeft) + 'px';
+            this.style.right = 'auto';
+          }
+
+          // Clip the top/bottom side.
+          if (parentRect.top + tooltipTop + thisRect.height > window.innerHeight) {
+            this.style.bottom = parentRect.height + 'px';
+            this.style.top = 'auto';
+          } else {
+            this.style.top = Math.max(-parentRect.top, tooltipTop) + 'px';
+            this.style.bottom = 'auto';
+          }
+        } else {
+          this.style.left = tooltipLeft + 'px';
+          this.style.top = tooltipTop + 'px';
+        }
+
+      },
+
+      _addListeners: function() {
+        if (this._target) {
+          this.listen(this._target, 'mouseenter', 'show');
+          this.listen(this._target, 'focus', 'show');
+          this.listen(this._target, 'mouseleave', 'hide');
+          this.listen(this._target, 'blur', 'hide');
+          this.listen(this._target, 'tap', 'hide');
+        }
+        this.listen(this, 'mouseenter', 'hide');
+      },
+
+      _findTarget: function() {
+        if (!this.manualMode)
+          this._removeListeners();
+
+        this._target = this.target;
+
+        if (!this.manualMode)
+          this._addListeners();
+      },
+
+      _manualModeChanged: function() {
+        if (this.manualMode)
+          this._removeListeners();
+        else
+          this._addListeners();
+      },
+
+      _onAnimationFinish: function() {
+        this._animationPlaying = false;
+        if (!this._showing) {
+          this.toggleClass('hidden', true, this.$.tooltip);
+        }
+      },
+
+      _removeListeners: function() {
+        if (this._target) {
+          this.unlisten(this._target, 'mouseenter', 'show');
+          this.unlisten(this._target, 'focus', 'show');
+          this.unlisten(this._target, 'mouseleave', 'hide');
+          this.unlisten(this._target, 'blur', 'hide');
+          this.unlisten(this._target, 'tap', 'hide');
+        }
+        this.unlisten(this, 'mouseenter', 'hide');
+      }
+    });
+defineCustomElement('order-split-results-table', class extends Polymer.Element {
+            _onClipboardTap() {
+                this.$.textForClipboard.hidden = false;
+                this.$.textForClipboard.select();
+                var successful = document.execCommand('copy');
+                if (!successful) {
+                    console.error('clipboard copy failed');
+                } else {
+                    this.$.textForClipboard.hidden = true;
+                }
+            }
+            _computeBreakdownItems(people) {
+                return Array.from(this.order.people.entries()).map(entry => {
+                    return {
+                        name: entry[0],
+                        price: entry[1]
+                    };
+                });
+            }
+            _computePersonTotal(name) {
+                return this._prettifyNumber(this.order.totals.get(name));
+            }
+            _multiply(a, b) {
+                return this._prettifyNumber(a * b);
+            }
+            ready() {
+                super.ready();
+                this.hidden = true; // hide until order property is set
+
+                var element = this;
+                window.OrderSplitResults = {
+                    show(order) {
+                        element.order = order;
+                    }
+                };
+            }
+            static get properties() {
+                return {
+                    order: {
+                        type: Object,
+                        observer: '_onOrderChanged'
+                    }
+                };
+            }
+            _onOrderChanged(order) {
+                if (this.order.constructor !== Order) {
+                    throw new Error('order must be of type Order');
+                }
+                this.hidden = false;
+                console.log('order', order);
+            }
+            /**
+             * Returns a string of a number in the format "#.##"
+             * @example
+             * _prettifyNumber(12); // returns "12.00"
+             * @param {number} n - The number to prettify
+             * @returns {string} A string of a number rounded and padded to 2 decimal places
+             */
+            _prettifyNumber(n) {
+                n = Math.round(n * 100) / 100; // round to 2 decimal places
+
+              // pad to 2 decimal places if necessary
+                var s = n.toString();
+
+                if (s.indexOf('.') === -1) {
+                    s += '.';
+                }
+
+                while (s.length < s.indexOf('.') + 3) {
+                    s += '0';
+                }
+
+                return s;
+            }
+            /**
+             * Returns a listing of names to split costs
+             * @param {object} totals - The totals property from the Order
+             * @returns {string} A view mapping names to split costs
+             */
+            _makeTextForClipboard(totals) {
+              // get length of longest name
+                var longestName = -1;
+                for (var [person, price] of totals) {
+                    longestName = Math.max(person.length, longestName);
+                }
+
+              // add 1 to longest name for a space after name
+                longestName += 1;
+
+                var output = '';
+                var name;
+                for (let [person, price] of totals) {
+                    let name = person;
+                    for (var i = person.length; i < longestName; i++) {
+                        name += ' ';
+                    }
+                    output += name + '$' + this._prettifyNumber(price) + '\n';
+                }
+
+                return output + '\n' + this._makeUrl(this.order);
+            }
+            /**
+             * Returns a display breaking down the Order split calculations
+             * @param {Order} order - the Order to breakdown
+             * @returns {string} A view of the Order breakdown
+             */
+            _makeBreakdownDisplay(order) {
+                var breakdown = '<table id="breakdown">';
+                breakdown += '<tr><th>Person</th><th>Item Costs</th><th>Tax</th><th>Tip</th><th>Fees Per Person</th><th>Person Total</th></tr>';
+                for (var [person, price] of order.people) {
+                    breakdown += '<tr><td>' + person + '</td><td>' +
+                    price + '</td><td> + ' + // item costs
+                    price + ' * ' + order.taxPercent + '</td><td> + ' + // taxes
+                    price + ' * ' + order.tipPercent + '</td><td> + ' + // tip
+                    order.feesPerPerson + '</td><td> = ' +
+                    this._prettifyNumber(order.totals.get(person)) + '</td></tr>';
+                }
+
+                breakdown += '</table>';
+                return breakdown;
+            }
+            _makeUrl(order) {
+                var link = window.location.origin + window.location.pathname;
+                if (link.indexOf('index.html') === -1) {
+                    link += 'index.html';
+                }
+
+                if (order.tip !== 0) order.tip = this._prettifyNumber(order.tip);
+
+                link += '?tax=' + order.tax + '&fee=' + order.fee + '&tip=' + order.tip;
+
+                for (var [person, val] of order.people) {
+                    link += '&' + encodeURIComponent(person) + '=' + this._prettifyNumber(val);
+                }
+
+                return link;
+            }
+
+        });
 // this is to help with debugging any SW caching issues if they appear
-            console.debug('script version: 87e411d');
+            console.debug('script version: ef6e330');

@@ -1,10 +1,4 @@
-<html><head><title>Order Splitter</title><meta charset=UTF-8><meta name=theme-color content=#11923B><meta name=mobile-web-app-capable content=yes><meta name=application-name content=PSK><link rel=icon sizes=192x192 href=ordersplitter192.png asnyc><link rel=icon sizes=16x16 href=ordersplitter16.png><link rel=icon sizes=32x32 href=ordersplitter32.png><meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-status-bar-style content=black><meta name=apple-mobile-web-app-title content="Order Splitter"><link rel=apple-touch-icon href=ordersplitter152.png asnyc><meta name=msapplication-TileColor content=#3372DF><meta name=msapplication-TileImage content=ordersplitter144.png async><style>
-#breakdown, #breakdown th {
-  border: 1px solid;
-  border-collapse: collapse;
-}
-
-</style><link rel=manifest href=manifest.json></head><body><div hidden by-vulcanize><dom-module id=iron-flex assetpath="../bower_components/iron-flex-layout/"><template><style>
+<html><head><title>Order Splitter</title><meta charset=UTF-8><meta name=theme-color content=#11923B><meta name=mobile-web-app-capable content=yes><meta name=application-name content=PSK><link rel=icon sizes=192x192 href=ordersplitter192.png asnyc><link rel=icon sizes=16x16 href=ordersplitter16.png><link rel=icon sizes=32x32 href=ordersplitter32.png><meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-status-bar-style content=black><meta name=apple-mobile-web-app-title content="Order Splitter"><link rel=apple-touch-icon href=ordersplitter152.png asnyc><meta name=msapplication-TileColor content=#3372DF><meta name=msapplication-TileImage content=ordersplitter144.png async><link rel=manifest href=manifest.json></head><body><div hidden by-vulcanize><dom-module id=iron-flex assetpath="../bower_components/iron-flex-layout/"><template><style>
       .layout.horizontal,
       .layout.vertical {
         display: -ms-flexbox;
@@ -2083,12 +2077,60 @@
             span[slot="prefix"] {
                 padding-right: 2px;
             }
-        </style><div><textarea id=textarea rows=20 cols=60 placeholder="Paste order details here" autofocus></textarea><paper-input type=number label=Taxes id=tax><span slot=prefix>$</span></paper-input><paper-input type=number label=Fees id=fee><span slot=prefix>$</span></paper-input><div id=tipContainer><paper-input type=number label=Tip id=tip><span slot=prefix class$=[[_computeTipDollarClass(usePercentForTip)]]>$</span> <span slot=suffix class$=[[_computeTipPercentClass(usePercentForTip)]]>%</span></paper-input><paper-checkbox checked={{usePercentForTip}} on-tap=_onCheckboxTap>Percentage</paper-checkbox></div><paper-button id=split on-tap=_onSplitButtonTap>Split</paper-button><paper-button id=parseDom disabled on-tap=_requestOrder>Parse dom? wut?</paper-button></div></template></dom-module><style>
+        </style><div><textarea id=textarea rows=20 cols=60 placeholder="Paste order details here" autofocus></textarea><paper-input type=number label=Taxes id=tax><span slot=prefix>$</span></paper-input><paper-input type=number label=Fees id=fee><span slot=prefix>$</span></paper-input><div id=tipContainer><paper-input type=number label=Tip id=tip><span slot=prefix class$=[[_computeTipDollarClass(usePercentForTip)]]>$</span> <span slot=suffix class$=[[_computeTipPercentClass(usePercentForTip)]]>%</span></paper-input><paper-checkbox checked={{usePercentForTip}} on-tap=_onCheckboxTap>Percentage</paper-checkbox></div><paper-button id=split on-tap=_onSplitButtonTap>Split</paper-button><paper-button id=parseDom disabled on-tap=_requestOrder>Parse dom? wut?</paper-button></div></template></dom-module><dom-module id=paper-tooltip assetpath="../bower_components/paper-tooltip/"><template><style>
+      :host {
+        display: block;
+        position: absolute;
+        outline: none;
+        z-index: 1002;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        -webkit-user-select: none;
+        user-select: none;
+        cursor: default;
+      }
+
+      #tooltip {
+        display: block;
+        outline: none;
+        @apply --paper-font-common-base;
+        font-size: 10px;
+        line-height: 1;
+
+        background-color: var(--paper-tooltip-background, #616161);
+        opacity: var(--paper-tooltip-opacity, 0.9);
+        color: var(--paper-tooltip-text-color, white);
+
+        padding: 8px;
+        border-radius: 2px;
+
+        @apply --paper-tooltip;
+      }
+
+      /* Thanks IE 10. */
+      .hidden {
+        display: none !important;
+      }
+    </style><div id=tooltip class=hidden><slot></slot></div></template></dom-module><dom-module id=order-split-results-table assetpath="../elements/"><template hidden><style>
+            :host {
+                @apply(--paper-font-common-base);
+            }
+            span.chip {
+                @apply(--paper-font-common-base);
+                background-color: var(--paper-grey-300);
+                padding: 5px;
+                border-radius: 14px;
+                line-height: 38px;
+            }
+            td {
+                white-space: nowrap; /* maintain dignity on small-width windows */
+            }
+        </style><div><table><tbody><tr><td style=font-weight:bold;>Everyone</td><td><span class=chip>$[[_prettifyNumber(order.subTotal)]] subtotal<paper-tooltip>sum of item costs</paper-tooltip></span></td><td>+ <span class=chip>$[[_prettifyNumber(order.tax)]] tax</span></td><td>+ <span class=chip>$[[_prettifyNumber(order.fee)]] fee</span></td><td>+ <span class=chip>$[[_prettifyNumber(order.tip)]] tip (this field is broken)</span></td><td>= <span class=chip>$[[_prettifyNumber(order.total)]] total<paper-tooltip>subtotal + tax + fees + tip</paper-tooltip></span></td></tr><template is=dom-repeat items=[[_computeBreakdownItems(order.people)]]><tr><td>[[item.name]]</td><td><span class=chip>$[[item.price]] price</span></td><td>+ <span class=chip>$[[_multiply(item.price, order.taxPercent)]] tax<paper-tooltip>[[item.price]] x [[order.taxPercent]]</paper-tooltip></span></td><td>+ <span class=chip>$[[_multiply(item.price, order.tipPercent)]] tip<paper-tooltip>[[item.price]] x [[order.tipPercent]]</paper-tooltip></span></td><td>+ <span class=chip>$[[_prettifyNumber(order.feesPerPerson)]] fee<paper-tooltip>[[order.feesPerPerson]]</paper-tooltip></span></td><td>= <span class=chip>$[[_computePersonTotal(item.name)]]</span></td></tr></template></tbody></table><paper-button on-tap=_onClipboardTap>Copy to Clipboard</paper-button><a href=[[_makeUrl(order)]]>link</a> <textarea id=textForClipboard value=[[_makeTextForClipboard(order.totals)]] hidden></textarea></div></template></dom-module><style>
             .wrapper {
                 display: grid;
                 grid-gap: 10px;
                 /*grid-template-columns: 500px;*/
                 grid-template-columns: repeat(auto-fill, minmax(200px, 500px));
             }
-        </style></div><div align=right>0.6.0</div><div align=right>87e411d</div><div align=right>6/10/2017, 11:37:49 PM</div><div class=wrapper><div><div>Example input:<br>(from OrderUp confirmation page)</div><div><pre>                        <example-order></example-order>
-                    </pre></div></div><div><order-input></order-input></div></div><p id=result></p><script src=index.js></script></body></html>
+        </style></div><div align=right>0.6.0</div><div align=right>ef6e330</div><div align=right>6/12/2017, 12:50:58 AM</div><div class=wrapper><div><div>Example input:<br>(from OrderUp confirmation page)</div><div><pre>                        <example-order></example-order>
+                    </pre></div></div><div><order-input></order-input></div></div><p id=result></p><order-split-results-table></order-split-results-table><script src=index.js></script></body></html>
