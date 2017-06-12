@@ -193,10 +193,6 @@ class Order {
         return this._tipDollars / this.subTotal;
     }
 
-    get tipPercentDisplay() {
-        return this.tipPercent * 100;
-    }
-
     get tipDollars() {
         return this.tipPercent * this.subTotal;
     }
@@ -15933,9 +15929,7 @@ defineCustomElement('order-split-results-table', class extends Polymer.Element {
                     link += 'index.html';
                 }
 
-                if (order.tip !== 0) order.tip = this._prettifyNumber(order.tip);
-
-                link += '?tax=' + order.tax + '&fee=' + order.fee + '&tip=' + order.tip;
+                link += '?tax=' + order.tax + '&fee=' + order.fee + '&tip=' + order.tipDollars;
 
                 for (var [person, val] of order.people) {
                     link += '&' + encodeURIComponent(person) + '=' + this._prettifyNumber(val);
@@ -15946,4 +15940,4 @@ defineCustomElement('order-split-results-table', class extends Polymer.Element {
 
         });
 // this is to help with debugging any SW caching issues if they appear
-            console.debug('script version: ef6e330');
+            console.debug('script version: bc2b2c9');
