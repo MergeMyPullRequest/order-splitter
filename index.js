@@ -15133,11 +15133,6 @@ defineCustomElement('order-input', class extends Polymer.Element {
                 }
                 OrderSplitResults.show(order);
             }
-            _requestOrder() {
-                // this method makes no sense to me.
-                // can we delete it?
-                window.postMessage('parseDom', '*');
-            }
             _onCheckboxTap() {
                 localStorage.setItem('usePercentForTip', JSON.stringify(!this.usePercentForTip));
             }
@@ -15942,7 +15937,7 @@ defineCustomElement('order-split-results-table', class extends Polymer.Element {
 
         });
 // this is to help with debugging any SW caching issues if they appear
-            var scriptSha = '5c7eec1';
+            var scriptSha = 'abb51ec';
             var htmlSha = document.querySelector('#sha').innerText;
             console.debug(`script version: ${scriptSha}`);
             console.debug(`html version:   ${htmlSha}`);
