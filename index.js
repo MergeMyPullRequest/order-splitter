@@ -249,6 +249,8 @@ class Order {
     }
 };
 (function() {
+    console.debug('service worker is disabled for now.');
+    return; // no service worker until we iron bugs out of caching
     let queryParams = new Map(location.search.slice(1).split('&').map(t=>t.split('=')));
     if (location.hostname === 'localhost' && queryParams.get('sw') !== 'test') {
         console.log('service worker disabled on localhost');
@@ -15940,7 +15942,7 @@ defineCustomElement('order-split-results-table', class extends Polymer.Element {
 
         });
 // this is to help with debugging any SW caching issues if they appear
-            var scriptSha = '56f0697';
+            var scriptSha = '5c7eec1';
             var htmlSha = document.querySelector('#sha').innerText;
             console.debug(`script version: ${scriptSha}`);
             console.debug(`html version:   ${htmlSha}`);
