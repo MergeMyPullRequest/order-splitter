@@ -47,8 +47,14 @@
             .wrapper {
                 display: grid;
                 grid-gap: 10px;
-                /*grid-template-columns: 500px;*/
-                grid-template-columns: repeat(auto-fill, minmax(200px, 500px));
+                grid-template-columns: repeat(auto-fill, minmax(175px, 200px));
+                grid-auto-flow: row;
+            }
+            .wrapper div {
+                grid-column: span 2;
+            }
+            .wrapper .order-results {
+                grid-column: span 3;
             }
         </style>
     </head>
@@ -66,8 +72,10 @@
                 alert('Whoops. The cached files on your machine are out of sync with each other. That\'s our bad. Please hard-refresh the page?');
             }
         </script>
-        <order-split-results-table></order-split-results-table>
         <div class="wrapper">
+            <div class="order-results">
+                <order-split-results-table></order-split-results-table>
+            </div>
             <div>
                 <div>
                     Example input:<br>
