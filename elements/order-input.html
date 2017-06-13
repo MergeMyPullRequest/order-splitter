@@ -44,7 +44,6 @@
             </paper-input>
             <paper-checkbox checked="{{usePercentForTip}}" on-tap="_onCheckboxTap">Percentage</paper-checkbox>
             </div>
-            <paper-button id="split" on-tap="_onSplitButtonTap">Split</paper-button>
             <paper-button id="parseDom" disabled on-tap="_requestOrder">Parse dom? wut?</paper-button>
         </div>
     </template>
@@ -60,7 +59,7 @@
             _computeTipDollarClass() {
                 return !this.usePercentForTip ? '' : 'hidden';
             }
-            _onSplitButtonTap() {
+            getOrder() {
                 var text = this.$.textarea.value;
                 var tax = Number(this.$.tax.value || 0);
                 var fee = Number(this.$.fee.value || 0);
@@ -75,7 +74,7 @@
                     console.log('trying csv parser');
                     order =  new CsvParser().parse(text).split();
                 }
-                OrderSplitResults.show(order);
+                return order;
             }
             _requestOrder() {
                 // this method makes no sense to me.

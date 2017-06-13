@@ -14,7 +14,8 @@ const orderData = [
 ];
 
 const dontVulcanizeTheseFiles = [
-    './bower_components/webcomponentsjs/custom-elements-es5-adapter.js'
+    './bower_components/webcomponentsjs/custom-elements-es5-adapter.js',
+    './bower_components/web-animations-js/web-animations-next-lite.min.js'
 ];
 
 var babel = require('gulp-babel');

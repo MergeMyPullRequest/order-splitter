@@ -45,12 +45,6 @@
         <link rel="import" href="../elements/order-split-results-table.html">
 
         <style>
-            .wrapper {
-                display: grid;
-                grid-gap: 10px;
-                /*grid-template-columns: 500px;*/
-                grid-template-columns: repeat(auto-fill, minmax(200px, 500px));
-            }
         </style>
 
         <script>
@@ -58,28 +52,7 @@
             console.debug('script version: INSERT_SHA');
         </script>
     </head>
-    <body>
+    <body style="margin:0;">
         <app-container></app-container>
-        <div align="right">INSERT_VERSION</div>
-        <div align="right">INSERT_SHA</div>
-        <div align="right">INSERT_BUILD_TIME</div>
-        <div class="wrapper">
-            <div>
-                <div>
-                    Example input:<br>
-                    (from OrderUp confirmation page)
-                </div>
-                <div>
-                    <pre>
-                        <example-order></example-order>
-                    </pre>
-                </div>
-            </div>
-            <div>
-                <order-input></order-input>
-            </div>
-        </div>
-        <p id="result"></p>
-        <order-split-results-table></order-split-results-table>
     </body>
 </html>
