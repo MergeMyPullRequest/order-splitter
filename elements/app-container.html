@@ -1,0 +1,37 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animatable.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="animations/flip-left-enter-animation.html">
+<link rel="import" href="animations/flip-left-exit-animation.html">
+
+<dom-module id="app-container">
+    <template>
+        <style>
+            #a {
+                background-color: lightgrey;
+                backface-visibility: hidden;
+            }
+            #b {
+                background-color: darkgrey;
+                backface-visibility: hidden;
+            }
+            neon-animated-pages {
+                height: 100px;
+            }
+        </style>
+        <neon-animated-pages id="flipCard" selected="{{selectedSide}}" entry-animation="flip-left-enter-animation" exit-animation="flip-left-exit-animation">
+            <neon-animatable entry-animation="flip-left-enter-animation" exit-animation="flip-left-exit-animation" id="a"> lightside </neon-animatable>
+            <neon-animatable entry-animation="flip-left-enter-animation" exit-animation="flip-left-exit-animation" id="b"> darkside </neon-animatable>
+        </neon-animated-pages>
+    </template>
+    <script>
+        defineCustomElement('app-container', class extends Polymer.Element {
+            ready() {
+                super.ready();
+                setInterval(() => {
+                    this.selectedSide = this.selectedSide ? 0 : 1;
+                }, 2000);
+            }
+        });
+    </script>
+</dom-module>

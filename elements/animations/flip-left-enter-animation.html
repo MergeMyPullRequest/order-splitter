@@ -1,0 +1,29 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-animation-behavior.html"
+<link rel="import" href="../../bower_components/neon-animation/web-animations.html">
+
+<script>
+    Polymer({
+        is: 'flip-left-enter-animation',
+
+        behaviors: [
+            Polymer.NeonAnimationBehavior
+        ],
+
+        configure: function(config) {
+            var node = config.node;
+
+            if (config.transformOrigin) {
+                this.setPrefixedProperty(node, 'transformOrigin', config.transformOrigin);
+            }
+
+            this._effect = new KeyframeEffect(node, [
+                    {offset: 0,   transform: 'perspective(1000px) rotateY(180deg)'},
+                    // {offset: 0.5, transform: 'perspective(1000px) rotateY(-90deg)'},
+                    {offset: 1,   transform: 'perspective(1000px) rotateY(0deg)'},
+            ], this.timingFromConfig(config));
+
+            return this._effect;
+        }
+    });
+</script>

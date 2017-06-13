@@ -146,7 +146,7 @@ gulp.task('serve', ['switch-to-src', 'default'], function() {
     gulp.watch([
         './webclient/*', 
         './common/*',
-        './elements/*',
+        './elements/**/*',
         './data/*'
     ], ['switch-to-src', 'default', browserSync.reload]);
 });
