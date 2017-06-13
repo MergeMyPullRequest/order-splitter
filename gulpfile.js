@@ -37,6 +37,8 @@ var replace = require('gulp-replace');
 var uglify = require('gulp-uglify');
 var vulcanize = require('gulp-vulcanize');
 
+const remoteUrl = require('./remote.deploy');
+
 var version = JSON.parse(require('fs').readFileSync('./package.json')).version;
 
 gulp.task('default', ['vulcanize', 'copy-files']);
@@ -131,9 +133,7 @@ gulp.task('lint', function () {
 gulp.task('gh-deploy', ['switch-to-src','default'], () => {
     return gulp.src(deployDir+'/**')
         .pipe(ghPages({
-            // uncomment one of these to deploy elsewhere
-            // remoteUrl: 'https://github.com/jonsmithers/order-splitter.git',
-            // remoteUrl: 'https://github.com/billy-hardy/order-splitter.git',
+            remoteUrl: remoteUrl,
             branch: 'gh-pages'
         }));
 });
