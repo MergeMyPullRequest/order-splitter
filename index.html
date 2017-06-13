@@ -2077,7 +2077,7 @@
             span[slot="prefix"] {
                 padding-right: 2px;
             }
-        </style><div><textarea id=textarea rows=20 cols=60 placeholder="Paste order details here" autofocus></textarea><paper-input type=number label=Taxes id=tax><span slot=prefix>$</span></paper-input><paper-input type=number label=Fees id=fee><span slot=prefix>$</span></paper-input><div id=tipContainer><paper-input type=number label=Tip id=tip><span slot=prefix class$=[[_computeTipDollarClass(usePercentForTip)]]>$</span> <span slot=suffix class$=[[_computeTipPercentClass(usePercentForTip)]]>%</span></paper-input><paper-checkbox checked={{usePercentForTip}} on-tap=_onCheckboxTap>Percentage</paper-checkbox></div><paper-button id=split on-tap=_onSplitButtonTap>Split</paper-button></div></template></dom-module><dom-module id=paper-tooltip assetpath="../bower_components/paper-tooltip/"><template><style>
+        </style><div><textarea id=textarea rows=20 cols=60 placeholder="Paste order details here" autofocus></textarea><paper-input type=number label=Taxes id=tax><span slot=prefix>$</span></paper-input><paper-input type=number label=Fees id=fee><span slot=prefix>$</span></paper-input><div id=tipContainer><paper-input type=number label=Tip id=tip><span slot=prefix class$=[[_computeTipDollarClass(usePercentForTip)]]>$</span> <span slot=suffix class$=[[_computeTipPercentClass(usePercentForTip)]]>%</span></paper-input><paper-checkbox checked={{usePercentForTip}} on-tap=_onCheckboxTap>Percentage</paper-checkbox></div><paper-button id=split on-tap=_onSplitButtonTap>Split</paper-button><paper-button id=parseDom disabled on-tap=_requestOrder>Parse dom? wut?</paper-button></div></template></dom-module><dom-module id=paper-tooltip assetpath="../bower_components/paper-tooltip/"><template><style>
       :host {
         display: block;
         position: absolute;
@@ -2132,5 +2132,5 @@
                 /*grid-template-columns: 500px;*/
                 grid-template-columns: repeat(auto-fill, minmax(200px, 500px));
             }
-        </style></div><div align=right>0.6.0</div><div align=right id=sha>abb51ec</div><div align=right>6/13/2017, 11:10:41 AM</div><div class=wrapper><div><div>Example input:<br>(from OrderUp confirmation page)</div><div><pre>                        <example-order></example-order>
+        </style></div><div align=right>0.6.0</div><div align=right id=sha>56f0697</div><div align=right>6/13/2017, 11:36:20 AM</div><div class=wrapper><div><div>Example input:<br>(from OrderUp confirmation page)</div><div><pre>                        <example-order></example-order>
                     </pre></div></div><div><order-input></order-input></div></div><p id=result></p><order-split-results-table></order-split-results-table><script src=index.js></script></body></html>
