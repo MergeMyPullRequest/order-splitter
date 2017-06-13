@@ -131,7 +131,9 @@ gulp.task('lint', function () {
 gulp.task('gh-deploy', ['switch-to-src','default'], () => {
     return gulp.src(deployDir+'/**')
         .pipe(ghPages({
-            remote: 'origin',
+            // uncomment one of these to deploy elsewhere
+            // remoteUrl: 'https://github.com/jonsmithers/order-splitter.git',
+            // remoteUrl: 'https://github.com/billy-hardy/order-splitter.git',
             branch: 'gh-pages'
         }));
 });
