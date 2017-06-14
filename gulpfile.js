@@ -132,12 +132,12 @@ gulp.task('lint', function () {
 });
 
 gulp.task('gh-deploy', (cb) => {
+    if (!argv.remoteUrl) {
+        return Promise.reject('--remoteUrl="..." flag is required');
+    }
     return sequence('gh-deploy-confirm', ['switch-to-src','default'], 'gh-deploy-helper')(cb);
 });
 gulp.task('gh-deploy-confirm', () => {
-    if (!argv.remoteUrl) {
-        return Promise.reject('--remoteUrl flag is required');
-    }
     if ('https://github.com/MergeMyPullRequest/order-splitter.git' === argv.remoteUrl) {
         return inquirer.prompt([
             {
