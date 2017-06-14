@@ -124,29 +124,7 @@
             if (scriptSha !== htmlSha) {
                 alert('Whoops. The cached files on your machine are out of sync with each other. That\'s our bad. Please hard-refresh the page?');
             }
-            let table = document.querySelector("#table");
-            if(chrome && chrome.storage) {
-                chrome.storage.onChanged.addListener((changes, namespace) => {
-                    if(namespace !== "local") {
-                        return;
-                    }
-                    parseLocalStorage();
-                });
-            }
-            function parseLocalStorage() {
-                chrome.storage.local.get('order', keyValueMap => {
-                    let order = Order.fromJSON(JSON.parse(keyValueMap.order));
-                    table.order = order;
-                });
-            }
-            let bitch = Number(window.localStorage.getItem("parseOrderBitch"));
-            function requestDom() {
-                bitch = (bitch === bitch ? bitch: 0) +1;
-                chrome.storage.local.set({parseOrderBitch: bitch});
-            }
-            document.getElementById("parse").addEventListener("click", requestDom);
         </script>
-        <button id="parse">Parse Dom? Wut?</button>
         <div class="wrapper">
             <div class="left-panel">
                 <div class="logo-wrapper">

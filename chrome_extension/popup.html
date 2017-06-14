@@ -120,7 +120,7 @@
             console.debug(`script version: ${scriptSha}`);
             console.debug(`html version:   ${htmlSha}`);
             if (scriptSha !== htmlSha) {
-                //alert('Whoops. The cached files on your machine are out of sync with each other. That\'s our bad. Please hard-refresh the page?');
+                alert('Whoops. The cached files on your machine are out of sync with each other. That\'s our bad. Please hard-refresh the page?');
             }
             let table = document.querySelector("#table");
             if(chrome && chrome.storage) {
@@ -137,10 +137,10 @@
                     table.order = order;
                 });
             }
-            let bitch = Number(window.localStorage.getItem("parseOrderBitch"));
+            let notifier = Number(window.localStorage.getItem("notifierToParse"));
             function requestDom() {
-                bitch = (bitch === bitch ? bitch: 0) +1;
-                chrome.storage.local.set({parseOrderBitch: bitch});
+                notifier = (notifier === notifier ? notifier: 0) + 1;
+                chrome.storage.local.set({notifierToParse: notifier});
             }
             requestDom();
             document.getElementById("parse").addEventListener("click", requestDom);
