@@ -135,7 +135,6 @@ gulp.task('gh-deploy', (cb) => {
     return sequence('gh-deploy-confirm', ['switch-to-src','default'], 'gh-deploy-helper')(cb);
 });
 gulp.task('gh-deploy-confirm', () => {
-    console.log('%cCONFIRM', 'font-size:15px');
     if (!argv.remoteUrl) {
         return Promise.reject('--remoteUrl flag is required');
     }
@@ -144,7 +143,7 @@ gulp.task('gh-deploy-confirm', () => {
             {
                 type: 'confirm',
                 name: 'shouldDeploy',
-                message: `Are you sure you want to deploy to "${argv.remoteUrl}"?`
+                message: 'Are you sure you want to deploy to "mergemypullrequest.github.io/order-splitter"?'
             }
         ]).then(({shouldDeploy}) => {
             if (!shouldDeploy) {
@@ -154,6 +153,7 @@ gulp.task('gh-deploy-confirm', () => {
             }
         });
     } else {
+        remoteUrl = argv.remoteUrl; // add to global scope
         return Promise.resolve();
     }
 });
