@@ -17,6 +17,7 @@ const dontVulcanizeTheseFiles = [
     './bower_components/webcomponentsjs/custom-elements-es5-adapter.js'
 ];
 
+var argv = require('yargs').argv;
 var babel = require('gulp-babel');
 var browserSync = require('browser-sync');
 var clean = require('gulp-clean');
@@ -30,10 +31,12 @@ var ghPages = require('gulp-gh-pages');
 var git = require('git-rev-sync');
 var gulp = require('gulp');
 var gulpif = require('gulp-if');
+var inquirer = require('inquirer');
 var merge = require('gulp-merge');
 var minifyCss = require('gulp-clean-css');
 var minifyHtml = require('gulp-minify-html');
 var replace = require('gulp-replace');
+var sequence = require('gulp-sequence');
 var uglify = require('gulp-uglify');
 var vulcanize = require('gulp-vulcanize');
 
@@ -128,12 +131,32 @@ gulp.task('lint', function () {
         .pipe(gulpif(isFixed, gulp.dest('.')));
 });
 
-gulp.task('gh-deploy', ['switch-to-src','default'], () => {
+gulp.task('gh-deploy', (cb) => {
+    return sequence('gh-deploy-confirm', ['switch-to-src','default'], 'gh-deploy-helper')(cb);
+});
+gulp.task('gh-deploy-confirm', () => {
+    console.log('%cCONFIRM', 'font-size:15px');
+    if (!argv.remoteUrl) {
+        return Promise.reject('--remoteUrl flag is required');
+    }
+    return inquirer.prompt([
+        {
+            type: 'confirm',
+            name: 'shouldDeploy',
+            message: `Are you sure you want to deploy to "${argv.remoteUrl}"?`
+        }
+    ]).then(({shouldDeploy}) => {
+        if (!shouldDeploy) {
+            throw new Error('cancelled by user');
+        } else {
+            remoteUrl = argv.remoteUrl; // add to global scope
+        }
+    });
+});
+gulp.task('gh-deploy-helper', () => {
     return gulp.src(deployDir+'/**')
         .pipe(ghPages({
-            // uncomment one of these to deploy elsewhere
-            // remoteUrl: 'https://github.com/jonsmithers/order-splitter.git',
-            // remoteUrl: 'https://github.com/billy-hardy/order-splitter.git',
+            remoteUrl,
             branch: 'gh-pages'
         }));
 });
