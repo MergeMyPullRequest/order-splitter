@@ -139,19 +139,23 @@ gulp.task('gh-deploy-confirm', () => {
     if (!argv.remoteUrl) {
         return Promise.reject('--remoteUrl flag is required');
     }
-    return inquirer.prompt([
-        {
-            type: 'confirm',
-            name: 'shouldDeploy',
-            message: `Are you sure you want to deploy to "${argv.remoteUrl}"?`
-        }
-    ]).then(({shouldDeploy}) => {
-        if (!shouldDeploy) {
-            throw new Error('cancelled by user');
-        } else {
-            remoteUrl = argv.remoteUrl; // add to global scope
-        }
-    });
+    if ('https://github.com/MergeMyPullRequest/order-splitter.git' === argv.remoteUrl) {
+        return inquirer.prompt([
+            {
+                type: 'confirm',
+                name: 'shouldDeploy',
+                message: `Are you sure you want to deploy to "${argv.remoteUrl}"?`
+            }
+        ]).then(({shouldDeploy}) => {
+            if (!shouldDeploy) {
+                throw new Error('cancelled by user');
+            } else {
+                remoteUrl = argv.remoteUrl; // add to global scope
+            }
+        });
+    } else {
+        return Promise.resolve();
+    }
 });
 gulp.task('gh-deploy-helper', () => {
     return gulp.src(deployDir+'/**')
