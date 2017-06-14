@@ -81,9 +81,13 @@
                 });
             }
             let bitch = Number(window.localStorage.getItem("parseOrderBitch"));
-            let parseOrderBitch = (bitch === "NaN"? bitch: 0) +1;
-            chrome.storage.local.set({parseOrderBitch});
-         </script>
+            function requestDom() {
+                bitch = (bitch === bitch ? bitch: 0) +1;
+                chrome.storage.local.set({parseOrderBitch: bitch});
+            }
+            document.getElementById("parse").addEventListener("click", requestDom);
+        </script>
+        <button id="parse">Parse Dom? Wut?</button>
         <div class="wrapper">
             <div>
                 <div>
