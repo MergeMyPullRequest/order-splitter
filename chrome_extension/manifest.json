@@ -3,14 +3,9 @@
 
   "name": "Order Splitter",
   "description": "This extension processes orders from orderup",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "browser_action": {
     "default_popup": "popup.html"
-  },
-  "icons": {
-    "16":  "./ordersplitter16.png",
-    "32":  "./ordersplitter32.png",
-    "128": "./ordersplitter128.png"
   },
   "content_scripts": [
     {
