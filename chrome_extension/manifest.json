@@ -5,7 +5,7 @@
   "description": "This extension processes orders from orderup",
   "version": "0.5.2",
   "browser_action": {
-    "default_popup": "index.html"
+    "default_popup": "popup.html"
   },
   "icons": {
     "16":  "./ordersplitter16.png",
