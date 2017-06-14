@@ -101,8 +101,8 @@ gulp.task('clean', function () {
 
 const extDir = './ext-dist/';
 
-gulp.task('ext', ['clean-ext', 'default'], function() {
-    return gulp.src([deployDir+'/**', './chrome_extension/*', './common/order.js'])
+gulp.task('ext', ['switch-to-src', 'clean-ext', 'default'], function() {
+    return gulp.src([deployDir+'/*', './chrome_extension/*', './common/order.js'])
         .pipe(debug('extension files'))
         .pipe(gulp.dest(extDir));
 });
