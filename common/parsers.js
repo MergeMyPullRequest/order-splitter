@@ -55,9 +55,11 @@ class OrderUpParser {
         lines.reduce((lastItemCost, line) => {
             let itemCostMatch, nameMatch;
 
-            if (itemCostMatch = line.match('.*\\$([0-9.]+)')) {
-                let itemCost = Number(itemCostMatch[1]);
-                return itemCost;
+            if(!lastItemCost) {
+                if (itemCostMatch = line.match('.*\\$([0-9.]+)')) {
+                    let itemCost = Number(itemCostMatch[1]);
+                    return itemCost;
+                }
             }
 
             if (nameMatch = line.match('.*Label for:(.*)')) {
@@ -79,9 +81,9 @@ class CsvParser {
 
         const lines = csv.split('\n');
         for(const line of lines) {
-            if(line.trim() !== "") {
+            if(line.trim() !== '') {
                 const [name, ...priceStrings] = line.split(',');
-                const price = priceStrings.map(ps => Number(ps.trim().replace('$',''))).reduce((p,acc) => p+acc);
+                const price = priceStrings.map(ps => Number(ps.trim().replace('$',''))).reduce((p,acc) => p+acc, 0);
                 if(name === 'fee') {
                     order.withNonTaxedFees(price);
                 }

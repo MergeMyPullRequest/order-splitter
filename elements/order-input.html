@@ -2,6 +2,7 @@
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../bower_components/paper-checkbox/paper-checkbox.html">
 <link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/iron-location/iron-location.html">
 <dom-module id="order-input">
     <template>
         <style>
@@ -44,8 +45,9 @@
             </paper-input>
             <paper-checkbox checked="{{usePercentForTip}}" on-tap="_onCheckboxTap">Percentage</paper-checkbox>
             </div>
-            <paper-button id="parseDom" disabled on-tap="_requestOrder">Parse dom? wut?</paper-button>
+            <paper-button id="split" on-tap="_onSplitButtonTap">Split</paper-button>
         </div>
+        <iron-location id="location"></iron-location>
     </template>
     <script>
         defineCustomElement('order-input', class extends Polymer.Element {
@@ -59,7 +61,7 @@
             _computeTipDollarClass() {
                 return !this.usePercentForTip ? '' : 'hidden';
             }
-            getOrder() {
+            _onSplitButtonTap() {
                 var text = this.$.textarea.value;
                 var tax = Number(this.$.tax.value || 0);
                 var fee = Number(this.$.fee.value || 0);
@@ -74,12 +76,15 @@
                     console.log('trying csv parser');
                     order =  new CsvParser().parse(text).split();
                 }
-                return order;
+                this._changeUrl(order);
             }
-            _requestOrder() {
-                // this method makes no sense to me.
-                // can we delete it?
-                window.postMessage('parseDom', '*');
+            _changeUrl(order) {
+                let query = 'tax=' + order.tax + '&fee=' + order.fee + '&tip=' + order.tipDollars;
+
+                for (var [person, val] of order.people) {
+                    query += '&' + encodeURIComponent(person) + '=' + Utils._prettifyNumber(val);
+                }
+                this.$.location.query = query;
             }
             _onCheckboxTap() {
                 localStorage.setItem('usePercentForTip', JSON.stringify(!this.usePercentForTip));
