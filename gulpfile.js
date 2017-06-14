@@ -9,7 +9,8 @@ const copyTheseFilesToDist = [
 ];
 
 const orderData = [
-    './data/*'
+    './data/*',
+    './images/*'
 ];
 
 const dontVulcanizeTheseFiles = [
