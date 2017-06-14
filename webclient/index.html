@@ -65,7 +65,25 @@
             if (scriptSha !== htmlSha) {
                 alert('Whoops. The cached files on your machine are out of sync with each other. That\'s our bad. Please hard-refresh the page?');
             }
-        </script>
+            let table = document.querySelector("#table");
+            if(chrome && chrome.storage) {
+                chrome.storage.onChanged.addListener((changes, namespace) => {
+                    if(namespace !== "local") {
+                        return;
+                    }
+                    parseLocalStorage();
+                });
+            }
+            function parseLocalStorage() {
+                chrome.storage.local.get('order', keyValueMap => {
+                    let order = Order.fromJSON(JSON.parse(keyValueMap.order));
+                    table.order = order;
+                });
+            }
+            let bitch = Number(window.localStorage.getItem("parseOrderBitch"));
+            let parseOrderBitch = (bitch === "NaN"? bitch: 0) +1;
+            chrome.storage.local.set({parseOrderBitch});
+         </script>
         <div class="wrapper">
             <div>
                 <div>
@@ -83,6 +101,6 @@
             </div>
         </div>
         <p id="result"></p>
-        <order-split-results-table></order-split-results-table>
+        <order-split-results-table id="table"></order-split-results-table>
     </body>
 </html>
