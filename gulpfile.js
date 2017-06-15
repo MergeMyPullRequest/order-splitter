@@ -53,12 +53,6 @@ gulp.task('copy-files', ['clean'], function() {
     );
 });
 
-gulp.task('build-content-script', function() {
-    gulp.src('./chrome_extension/contentScript.js')
-        .pipe(browserify())
-        .pipe(gulp.dest(extDir));
-});
-
 gulp.task('copy-files-ext', ['vulcanize-ext', 'clean-ext'], function() {
     return merge(
         gulp.src([...orderData, ...dontVulcanizeTheseFiles], {base: './'})
