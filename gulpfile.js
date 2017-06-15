@@ -33,6 +33,7 @@ var git = require('git-rev-sync');
 var gulp = require('gulp');
 var gulpif = require('gulp-if');
 var inquirer = require('inquirer');
+var parse = require('parse-git-config');
 var merge = require('gulp-merge');
 var minifyCss = require('gulp-clean-css');
 var minifyHtml = require('gulp-minify-html');
@@ -161,13 +162,20 @@ gulp.task('lint', function () {
 });
 
 gulp.task('gh-deploy', (cb) => {
-    if (!argv.remoteUrl) {
-        return Promise.reject('--remoteUrl="..." flag is required');
+    let url = argv.remoteUrl;
+    if (!url && argv.remote) {
+        let gitConfig = parse.sync();
+        url = gitConfig['remote "'+argv.remote+'"'].url;
     }
-    return sequence('gh-deploy-confirm', ['switch-to-src','default'], 'gh-deploy-helper')(cb);
+    if(!url) {
+        return Promise.reject('--remoteUrl="..." or --remote="..." flag is required');
+    }
+    remoteUrl = url; //add to global scope
+    return sequence('gh-deploy-confirm', ['default'], 'gh-deploy-helper')(cb);
 });
 gulp.task('gh-deploy-confirm', () => {
-    if ('https://github.com/MergeMyPullRequest/order-splitter.git' === argv.remoteUrl) {
+    if ('https://github.com/MergeMyPullRequest/order-splitter.git' === remoteUrl ||
+        'git@github.com:MergeMyPullRequest/order-splitter.git' === remoteUrl) {
         return inquirer.prompt([
             {
                 type: 'confirm',
@@ -177,12 +185,9 @@ gulp.task('gh-deploy-confirm', () => {
         ]).then(({shouldDeploy}) => {
             if (!shouldDeploy) {
                 throw new Error('cancelled by user');
-            } else {
-                remoteUrl = argv.remoteUrl; // add to global scope
             }
         });
     } else {
-        remoteUrl = argv.remoteUrl; // add to global scope
         return Promise.resolve();
     }
 });
