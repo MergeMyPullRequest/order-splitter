@@ -50,6 +50,8 @@
         <iron-location id="location"></iron-location>
     </template>
     <script>
+        (function() {
+        const parsers = require('../common/parsers.js');
         defineCustomElement('order-input', class extends Polymer.Element {
             ready() {
                 super.ready();
@@ -70,11 +72,11 @@
 
                 var order;
                 try {
-                    order =  new OrderUpParser().parse(text, fee, tax, tip, isTipPercentage).split();
+                    order =  new parsers.OrderUpParser().parse(text, fee, tax, tip, isTipPercentage).split();
                 } catch(e) {
                     console.error('OrderUp parser failed', e);
                     console.log('trying csv parser');
-                    order =  new CsvParser().parse(text).split();
+                    order =  new parsers.CsvParser().parse(text).split();
                 }
                 this._changeUrl(order);
             }
@@ -90,5 +92,6 @@
                 localStorage.setItem('usePercentForTip', JSON.stringify(!this.usePercentForTip));
             }
         });
+        })();
     </script>
 </dom-module>

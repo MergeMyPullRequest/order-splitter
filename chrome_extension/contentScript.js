@@ -1,3 +1,5 @@
+const Order = require('../common/order.js');
+
 chrome.storage.onChanged.addListener((changes, namespace) => {
     if(namespace !== "local") {
         return;

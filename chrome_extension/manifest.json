@@ -11,11 +11,6 @@
     {
       "matches": ["*://orderup.com/orders/*"],
       "js": ["./contentScript.js"]
-    },
-    {
-      "matches": ["*://orderup.com/orders/*"],
-      "js": ["./order.js"],
-      "run_at": "document_start"
     }
   ],
   "web_accessible_resources": ["./order.js"],
