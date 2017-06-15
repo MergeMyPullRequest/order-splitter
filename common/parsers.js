@@ -1,3 +1,4 @@
+let Order = require('./order.js');
 class QueryStringParser {
     /**
      * Parses input from a URL query string into an Order.
@@ -45,10 +46,7 @@ class OrderUpParser {
      * @return {Order} An order parsed from the OrderUp.com confirmation summary
      */
     parse(orderUpText, fee=0, tax=0, tip=0, isTipPercentage=false) {
-        let order = new Order()
-            .withNonTaxedFees(fee)
-            .withTax(tax)
-            .withTip(tip, isTipPercentage);
+        let order = new Order();
 
         var lines = orderUpText.split('\n');
 
@@ -102,3 +100,8 @@ class CsvParser {
         return order;
     }
 }
+module.exports = {
+    OrderUpParser,
+    QueryStringParser,
+    CsvParser
+};

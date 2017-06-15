@@ -1,0 +1,103 @@
+{
+    "OrderUpParser": [
+        {
+            "input": {
+                "text": [
+                    "1 12 Nuggets -  $4.39",
+                    "Sauce: Ketchup",
+                    "Label for:Alice",
+                    "2 Tots - $1.99",
+                    "Label for:Bob",
+                    "1   6 Wings -    $6.29",
+                    "Wing Seasoning: Sweet Honey BBQ",
+                    "Label for:Charlie"
+                ],
+                "tip": 1,
+                "tax": 1,
+                "fee": 1
+            },
+            "expected": {
+                "Alice": 5.42,
+                "Bob": 2.64,
+                "Charlie": 7.62
+            }
+        },
+        {
+            "input": {
+                "text": [
+                    "1 12 Nuggets -  $4.39",
+                    "Sauce: Ketchup",
+                    "Label for:Alice",
+                    "2 Tots - $1.99",
+                    "Label for:Bob",
+                    "1   6 Wings -    $6.29",
+                    "Wing Seasoning: Sweet Honey BBQ",
+                    "Label for:Charlie"
+                ],
+                "tip": 0,
+                "tax": 0,
+                "fee": 0
+            },
+            "expected": {
+                "Alice": 4.39,
+                "Bob": 1.99,
+                "Charlie": 6.29
+            }
+        },
+        {
+            "input": {
+                "text": [
+                    "1 12 Nuggets -  $4.39",
+                    "Add Sauce: ($3.00)",
+                    "Label for:Alice",
+                    "2 Tots - $1.99",
+                    "Label for:Bob",
+                    "1   6 Wings -    $6.29",
+                    "Wing Seasoning: Sweet Honey BBQ",
+                    "Label for:Charlie"
+                ],
+                "tip": 0,
+                "tax": 0,
+                "fee": 0
+            },
+            "expected": {
+                "Alice": 4.39,
+                "Bob": 1.99,
+                "Charlie": 6.29
+            }
+        }
+    ],
+    "CsvParser": [
+        {
+            "input": {
+                "text": [
+                    "Alice, $4.39",
+                    "Bob,1.99",
+                    "Charlie,      6.29, 4"
+                ]
+            },
+            "expected": {
+                "Alice": 4.39,
+                "Bob": 1.99,
+                "Charlie": 10.29
+            }
+        },
+        {
+            "input": {
+                "text": [
+                    "Alice, $4.39",
+                    "Bob,1.99",
+                    "Charlie,      6.29, 4",
+                    "fee,4",
+                    "tax,$3",
+                    "tip, 4"
+                ]
+            },
+            "expected": {
+                "Alice": 7.57,
+                "Bob": 4.16,
+                "Charlie": 15.94
+            }
+        }
+    ]
+}
