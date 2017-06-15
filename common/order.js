@@ -125,3 +125,4 @@ class Order {
         return order.split();
     }
 }
+module.exports = Order;

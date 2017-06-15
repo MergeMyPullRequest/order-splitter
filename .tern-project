@@ -3,7 +3,6 @@
     "browser"
   ],
   "loadEagerly": [
-    "!node_modules/**",
     "./elements/*",
     "./common/*js"
   ]

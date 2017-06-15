@@ -19,6 +19,7 @@ const dontVulcanizeTheseFiles = [
 
 var argv = require('yargs').argv;
 var babel = require('gulp-babel');
+var browserify = require('gulp-browserify');
 var browserSync = require('browser-sync');
 var clean = require('gulp-clean');
 var concat = require('gulp-concat');
@@ -64,9 +65,26 @@ gulp.task('copy-files-ext', ['vulcanize-ext', 'clean-ext'], function() {
             .pipe(debug('copied files'))
             .pipe(gulp.dest(extDir)),
         gulp.src(['!./chrome_extension/popup.html', './chrome_extension/*', './common/order.js'])
-            .pipe(gulp.dest(extDir))
+        .pipe(gulp.dest(extDir)),
+        gulp.src('./chrome_extension/contentScript.js')
+        .pipe(transpile())
+        .pipe(browserify())
+        .pipe(gulp.dest(extDir))
     );
 });
+
+function transpile() {
+    return babel({
+        presets: ['es2015'],
+        plugins: [
+            'async-to-promises'
+        ],
+        ignore: [
+            '*custom-elements-es5-adapter.js'
+        ],
+        compact: true
+    });
+}
 
 function vulc(src) {
     var jsFilter = filter(['**/*.js'], {restore: true});
@@ -90,16 +108,10 @@ function vulc(src) {
         .pipe(htmlFilter.restore)
 
         .pipe(jsFilter)
-        .pipe(gulpif(DEPLOY, babel({
-            presets: ['es2015'],
-            plugins: [
-                'async-to-promises'
-            ],
-            ignore: [
-                '*custom-elements-es5-adapter.js'
-            ],
-            compact: true
-        })))
+        .pipe(gulpif(DEPLOY, transpile()))
+        .pipe(browserify({
+            insertGlobals: true
+        }))
 
         .pipe(jsFilter.restore)
 
@@ -120,12 +132,12 @@ gulp.task('vulcanize', ['clean'], function() {
 
 gulp.task('clean', function () {
     return gulp.src(deployDir)
-      .pipe(clean());
+        .pipe(clean());
 });
 
 const extDir = './ext-dist/';
 
-gulp.task('ext', ['switch-to-src', 'copy-files-ext']);
+gulp.task('ext', ['copy-files-ext']);
 
 gulp.task('clean-ext', function() {
     return gulp.src(extDir).pipe(clean());
@@ -182,7 +194,7 @@ gulp.task('gh-deploy-helper', () => {
         }));
 });
 
-gulp.task('serve', ['switch-to-src', 'default'], function() {
+gulp.task('serve', ['default'], function() {
     browserSync({
         server: {
             baseDir: deployDir
@@ -194,9 +206,5 @@ gulp.task('serve', ['switch-to-src', 'default'], function() {
         './common/*',
         './elements/*',
         './data/*'
-    ], ['switch-to-src', 'default', browserSync.reload]);
-});
-
-gulp.task('switch-to-src', function() {
-    DEPLOY = false;
+    ], ['default', browserSync.reload]);
 });
