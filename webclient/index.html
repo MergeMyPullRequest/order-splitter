@@ -39,9 +39,16 @@
         <script src="sw-install.js"></script>
         <link rel="manifest" href="manifest.json">
 
-        <link rel="import" href="../elements/example-order.html">
-        <link rel="import" href="../elements/order-input.html">
-        <link rel="import" href="../elements/order-split-results-table.html">
+        <link rel="import" href="elements/example-order.html">
+        <link rel="import" href="elements/flip-card.html">
+        <link rel="import" href="elements/order-input.html">
+        <script>
+            // TODO: refactor this handler when not at risk of merge conflicts
+            document.addEventListener('set-order', () => {
+                document.querySelector('#mainFlipCard').flip();
+            });
+        </script>
+        <link rel="import" href="elements/order-split-results-table.html">
 
         <style>
             body {
@@ -49,11 +56,18 @@
                 font-family: 'Arial', sans-serif;
                 font-size: 16px;
             }
+            .wrapperwrapper {
+                display: flex;
+                flex-direction: row;
+                align-items: stretch;
+                justify-content: center;
+            }
             .wrapper {
+                flex-grow: 1;
+                max-width: 1200px;
                 display: grid;
                 grid-gap: 10px;
-                /*grid-template-columns: 500px;*/
-                grid-template-columns: repeat(auto-fill, minmax(200px, 550px));
+                grid-template-columns: repeat(auto-fit, minmax(550px, 1fr));
                 justify-content: center;
             }
             .left-panel {
@@ -125,6 +139,8 @@
                 alert('Whoops. The cached files on your machine are out of sync with each other. That\'s our bad. Please hard-refresh the page?');
             }
         </script>
+<flip-card id="mainFlipCard">
+    <div slot="front" class="wrapperwrapper">
         <div class="wrapper">
             <div class="left-panel">
                 <div class="logo-wrapper">
@@ -155,7 +171,10 @@
                 </div>
             </div>
         </div>
-        <p id="result"></p>
+    </div>
+    <div slot="back" class="wrapperwrapper">
         <order-split-results-table id="table"></order-split-results-table>
+    </div>
+</flip-card>
     </body>
 </html>

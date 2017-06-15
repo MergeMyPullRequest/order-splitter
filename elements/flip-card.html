@@ -1,0 +1,51 @@
+<link rel="import" href="../bower_components/neon-animation/neon-animatable.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="animations/flip-left-enter-animation.html">
+<link rel="import" href="animations/flip-left-exit-animation.html">
+
+<dom-module id="flip-card">
+    <template>
+        <style>
+            neon-animatable {
+                backface-visibility: hidden;
+            }
+            #a {
+                /* background-color: lightgrey; */
+            }
+            #b {
+                /* background-color: darkgrey; */
+            }
+            neon-animated-pages {
+                /* height: 100vh; */
+                /* overflow: scroll; */
+            }
+        </style>
+        <neon-animated-pages id="flipCard" selected="{{selectedSide}}" entry-animation="flip-left-enter-animation" exit-animation="flip-left-exit-animation">
+            <neon-animatable entry-animation="flip-left-enter-animation" exit-animation="flip-left-exit-animation" id="a"> 
+                    <slot name="front"></slot>
+            </neon-animatable>
+            <neon-animatable entry-animation="flip-left-enter-animation" exit-animation="flip-left-exit-animation" id="b"> 
+                    <slot name="back"></slot>
+            </neon-animatable>
+        </neon-animated-pages>
+    </template>
+    <script>
+        defineCustomElement('flip-card', class extends Polymer.Element {
+            constructor() {
+                super();
+            }
+            flip() {
+                this.selectedSide = 1 - this.selectedSide;
+            }
+            static get properties() {
+                return {
+                    selectedSide: {
+                        type: Number,
+                        value: 0
+                    }
+                };
+            }
+        });
+    </script>
+</dom-module>

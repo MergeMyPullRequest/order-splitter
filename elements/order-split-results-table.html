@@ -206,8 +206,8 @@
             }
             _handleQueryStringChanged(e, {value}) {
                 this.order = new QueryStringParser().parse(value).split();
+                document.dispatchEvent(new CustomEvent('set-order'));
             }
-
         });
     </script>
 

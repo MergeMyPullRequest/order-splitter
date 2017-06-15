@@ -14,7 +14,8 @@ const orderData = [
 ];
 
 const dontVulcanizeTheseFiles = [
-    './bower_components/webcomponentsjs/custom-elements-es5-adapter.js'
+    './bower_components/webcomponentsjs/custom-elements-es5-adapter.js',
+    './bower_components/web-animations-js/web-animations-next-lite.min.js'
 ];
 
 var argv = require('yargs').argv;
@@ -48,9 +49,9 @@ gulp.task('copy-files', ['clean'], function() {
     return merge(
         gulp.src([...orderData, ...dontVulcanizeTheseFiles], {base: './'})
             .pipe(gulp.dest(deployDir)),
-        gulp.src([...copyTheseFilesToDist])
+        gulp.src([...copyTheseFilesToDist, ...dontVulcanizeTheseFiles])
             .pipe(replace('INSERT_SHA', git.short()))
-            .pipe(debug('copied files'))
+            .pipe(debug({title: 'copying file'}))
             .pipe(gulp.dest(deployDir))
     );
 });
@@ -176,6 +177,7 @@ gulp.task('gh-deploy-confirm', () => {
 });
 gulp.task('gh-deploy-helper', () => {
     return gulp.src(deployDir+'/**')
+        .pipe(debug({title: 'deploying file'}))
         .pipe(ghPages({
             remoteUrl,
             branch: 'gh-pages'
@@ -192,7 +194,7 @@ gulp.task('serve', ['switch-to-src', 'default'], function() {
     gulp.watch([
         './webclient/*', 
         './common/*',
-        './elements/*',
+        './elements/**/*',
         './data/*'
     ], ['switch-to-src', 'default', browserSync.reload]);
 });
