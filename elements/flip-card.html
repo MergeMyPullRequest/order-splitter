@@ -20,12 +20,6 @@
                 /* height: 100vh; */
                 /* overflow: scroll; */
             }
-            .wrapper {
-                display: grid;
-                grid-gap: 10px;
-                /*grid-template-columns: 500px;*/
-                grid-template-columns: repeat(auto-fill, minmax(200px, 500px));
-            }
         </style>
         <neon-animated-pages id="flipCard" selected="{{selectedSide}}" entry-animation="flip-left-enter-animation" exit-animation="flip-left-exit-animation">
             <neon-animatable entry-animation="flip-left-enter-animation" exit-animation="flip-left-exit-animation" id="a"> 
