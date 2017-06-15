@@ -165,7 +165,11 @@ gulp.task('gh-deploy', (cb) => {
     let url = argv.remoteUrl;
     if (!url && argv.remote) {
         let gitConfig = parse.sync();
-        url = gitConfig['remote "'+argv.remote+'"'].url;
+        let remote = gitConfig['remote "'+argv.remote+'"'];
+        if(!remote) {
+            return Promise.reject('remote name does not exist in repository');
+        }
+        url = remote.url;
     }
     if(!url) {
         return Promise.reject('--remoteUrl="..." or --remote="..." flag is required');
