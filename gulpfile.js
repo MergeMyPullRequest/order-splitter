@@ -18,6 +18,7 @@ const dontVulcanizeTheseFiles = [
     './bower_components/web-animations-js/web-animations-next-lite.min.js'
 ];
 
+var argv = require('yargs').argv;
 var babel = require('gulp-babel');
 var browserSync = require('browser-sync');
 var clean = require('gulp-clean');
@@ -31,10 +32,12 @@ var ghPages = require('gulp-gh-pages');
 var git = require('git-rev-sync');
 var gulp = require('gulp');
 var gulpif = require('gulp-if');
+var inquirer = require('inquirer');
 var merge = require('gulp-merge');
 var minifyCss = require('gulp-clean-css');
 var minifyHtml = require('gulp-minify-html');
 var replace = require('gulp-replace');
+var sequence = require('gulp-sequence');
 var uglify = require('gulp-uglify');
 var vulcanize = require('gulp-vulcanize');
 
@@ -146,10 +149,36 @@ gulp.task('lint', function () {
         .pipe(gulpif(isFixed, gulp.dest('.')));
 });
 
-gulp.task('gh-deploy', ['switch-to-src','default'], () => {
+gulp.task('gh-deploy', (cb) => {
+    if (!argv.remoteUrl) {
+        return Promise.reject('--remoteUrl="..." flag is required');
+    }
+    return sequence('gh-deploy-confirm', ['switch-to-src','default'], 'gh-deploy-helper')(cb);
+});
+gulp.task('gh-deploy-confirm', () => {
+    if ('https://github.com/MergeMyPullRequest/order-splitter.git' === argv.remoteUrl) {
+        return inquirer.prompt([
+            {
+                type: 'confirm',
+                name: 'shouldDeploy',
+                message: 'Are you sure you want to deploy to "mergemypullrequest.github.io/order-splitter"?'
+            }
+        ]).then(({shouldDeploy}) => {
+            if (!shouldDeploy) {
+                throw new Error('cancelled by user');
+            } else {
+                remoteUrl = argv.remoteUrl; // add to global scope
+            }
+        });
+    } else {
+        remoteUrl = argv.remoteUrl; // add to global scope
+        return Promise.resolve();
+    }
+});
+gulp.task('gh-deploy-helper', () => {
     return gulp.src(deployDir+'/**')
         .pipe(ghPages({
-            remote: 'origin',
+            remoteUrl,
             branch: 'gh-pages'
         }));
 });
