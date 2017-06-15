@@ -39,16 +39,16 @@
         <script src="sw-install.js"></script>
         <link rel="manifest" href="manifest.json">
 
-        <link rel="import" href="../elements/example-order.html">
-        <link rel="import" href="../elements/flip-card.html">
-        <link rel="import" href="../elements/order-input.html">
+        <link rel="import" href="elements/example-order.html">
+        <link rel="import" href="elements/flip-card.html">
+        <link rel="import" href="elements/order-input.html">
         <script>
             // TODO: refactor this handler when not at risk of merge conflicts
             document.addEventListener('set-order', () => {
                 document.querySelector('#mainFlipCard').flip();
             });
         </script>
-        <link rel="import" href="../elements/order-split-results-table.html">
+        <link rel="import" href="elements/order-split-results-table.html">
 
         <style>
             body {

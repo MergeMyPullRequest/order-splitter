@@ -49,9 +49,9 @@ gulp.task('copy-files', ['clean'], function() {
     return merge(
         gulp.src([...orderData, ...dontVulcanizeTheseFiles], {base: './'})
             .pipe(gulp.dest(deployDir)),
-        gulp.src([...copyTheseFilesToDist])
+        gulp.src([...copyTheseFilesToDist, ...dontVulcanizeTheseFiles])
             .pipe(replace('INSERT_SHA', git.short()))
-            .pipe(debug('copied files'))
+            .pipe(debug({title: 'copying file'}))
             .pipe(gulp.dest(deployDir))
     );
 });
@@ -177,6 +177,7 @@ gulp.task('gh-deploy-confirm', () => {
 });
 gulp.task('gh-deploy-helper', () => {
     return gulp.src(deployDir+'/**')
+        .pipe(debug({title: 'deploying file'}))
         .pipe(ghPages({
             remoteUrl,
             branch: 'gh-pages'
