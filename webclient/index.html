@@ -42,6 +42,12 @@
         <link rel="import" href="../elements/example-order.html">
         <link rel="import" href="../elements/flip-card.html">
         <link rel="import" href="../elements/order-input.html">
+        <script>
+            // TODO: refactor this handler when not at risk of merge conflicts
+            document.addEventListener('set-order', () => {
+                document.querySelector('#mainFlipCard').flip();
+            });
+        </script>
         <link rel="import" href="../elements/order-split-results-table.html">
 
         <style>
@@ -133,7 +139,7 @@
                 alert('Whoops. The cached files on your machine are out of sync with each other. That\'s our bad. Please hard-refresh the page?');
             }
         </script>
-<flip-card>
+<flip-card id="mainFlipCard">
     <div slot="front" class="wrapperwrapper">
         <div class="wrapper">
             <div class="left-panel">
