@@ -51,47 +51,47 @@
     </template>
     <script>
         (function() {
-        const parsers = require('../common/parsers.js');
-        defineCustomElement('order-input', class extends Polymer.Element {
-            ready() {
-                super.ready();
-                this.usePercentForTip = JSON.parse(localStorage.getItem('usePercentForTip'));
-            }
-            _computeTipPercentClass() {
-                return this.usePercentForTip ? '' : 'hidden';
-            }
-            _computeTipDollarClass() {
-                return !this.usePercentForTip ? '' : 'hidden';
-            }
-            _onSplitButtonTap() {
-                var text = this.$.textarea.value;
-                var tax = Number(this.$.tax.value || 0);
-                var fee = Number(this.$.fee.value || 0);
-                var tip = Number(this.$.tip.value || 0);
-                var isTipPercentage = this.usePercentForTip;
-
-                var order;
-                try {
-                    order =  new parsers.OrderUpParser().parse(text, fee, tax, tip, isTipPercentage).split();
-                } catch(e) {
-                    console.error('OrderUp parser failed', e);
-                    console.log('trying csv parser');
-                    order =  new parsers.CsvParser().parse(text).split();
+            const parsers = require('../common/parsers.js');
+            defineCustomElement('order-input', class extends Polymer.Element {
+                ready() {
+                    super.ready();
+                    this.usePercentForTip = JSON.parse(localStorage.getItem('usePercentForTip'));
                 }
-                this._changeUrl(order);
-            }
-            _changeUrl(order) {
-                let query = 'tax=' + order.tax + '&fee=' + order.fee + '&tip=' + order.tipDollars;
-
-                for (var [person, val] of order.people) {
-                    query += '&' + encodeURIComponent(person) + '=' + Utils._prettifyNumber(val);
+                _computeTipPercentClass() {
+                    return this.usePercentForTip ? '' : 'hidden';
                 }
-                this.$.location.query = query;
-            }
-            _onCheckboxTap() {
-                localStorage.setItem('usePercentForTip', JSON.stringify(!this.usePercentForTip));
-            }
-        });
+                _computeTipDollarClass() {
+                    return !this.usePercentForTip ? '' : 'hidden';
+                }
+                _onSplitButtonTap() {
+                    var text = this.$.textarea.value;
+                    var tax = Number(this.$.tax.value || 0);
+                    var fee = Number(this.$.fee.value || 0);
+                    var tip = Number(this.$.tip.value || 0);
+                    var isTipPercentage = this.usePercentForTip;
+
+                    var order;
+                    try {
+                        order =  new parsers.OrderUpParser().parse(text, fee, tax, tip, isTipPercentage).split();
+                    } catch(e) {
+                        console.error('OrderUp parser failed', e);
+                        console.log('trying csv parser');
+                        order =  new parsers.CsvParser().parse(text).split();
+                    }
+                    this._changeUrl(order);
+                }
+                _changeUrl(order) {
+                    let query = 'tax=' + order.tax + '&fee=' + order.fee + '&tip=' + order.tipDollars;
+
+                    for (var [person, val] of order.people) {
+                        query += '&' + encodeURIComponent(person) + '=' + Utils._prettifyNumber(val);
+                    }
+                    this.$.location.query = query;
+                }
+                _onCheckboxTap() {
+                    localStorage.setItem('usePercentForTip', JSON.stringify(!this.usePercentForTip));
+                }
+            });
         })();
     </script>
 </dom-module>
