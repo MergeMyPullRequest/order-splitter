@@ -29,9 +29,16 @@
             span[slot="prefix"] {
                 padding-right: 2px;
             }
+            div[contenteditable] {
+                border: 5px solid black;
+                overflow-x: scroll;
+                overflow-y: scroll;
+                height: 500px;
+            }
         </style>
         <div>
-            <textarea id="textarea" rows="20" cols="60" placeholder="Paste order details here" autofocus></textarea>
+            <div id="input" contenteditable="true" on-input="_test" autofocus></div>
+            <textarea id="textarea" rows="20" cols="60" placeholder="Paste order details here"></textarea>
             <paper-input type="number" label="Taxes" id="tax">
                 <span slot="prefix">$</span>
             </paper-input>
@@ -52,7 +59,53 @@
     <script>
         (function() {
             const parsers = require('../common/parsers.js');
+            window.Order = require('../common/order.js');;
             defineCustomElement('order-input', class extends Polymer.Element {
+                _test() {
+
+                    // var highlight = element => element.style.backgroundColor = 'yellow';
+                    var highlight = element => {
+                        element.style.background = 'repeating-linear-gradient(45deg, yellow, yellow 10px, #fafa0a 10px, #fafa0a 20px )';
+                        element.title = 'OrderSplitter is using this value';
+                    }
+
+                    var summaryTable = Array.from(this.$.input.querySelectorAll('#order-confirmation-page tr'));
+                    if (summaryTable) {
+                        summaryTable.map(tr => Array.from(tr.querySelectorAll('td'))).filter(tds => tds.length).forEach(([left_td, center_td, right_td]) => {
+                            let label, price;
+
+                            if (right_td && right_td.classList.contains('price-table')) {
+                                price = right_td.innerText;
+                                highlight(right_td);
+                                console.log('price', price);
+                            }
+
+                            if (center_td && (label = center_td.querySelector('li strong'))) {
+                                highlight(label);
+                                label = label.innerText;
+                                console.log('label', label);
+                            }
+                        });
+                    }
+
+                    var infoTable = Array.from(this.$.input.querySelectorAll('div.order-information tr'));
+                    console.log('infoTable', infoTable);
+                    if (infoTable) {
+                        infoTable.map(tr => Array.from(tr.querySelectorAll('td'))).filter(tds => tds.length).forEach(([left, right]) => {
+                            [
+                                'Sales Tax',
+                                'Processing Fee',
+                                'Delivery Fee',
+                                'Tip'
+                            ].forEach(chargeLabel => {
+                                if (left.textContent === chargeLabel) {
+                                    console.log(chargeLabel, right.textContent);
+                                    highlight(right);
+                                }
+                            });
+                        });
+                    }
+                }
                 ready() {
                     super.ready();
                     this.usePercentForTip = JSON.parse(localStorage.getItem('usePercentForTip'));
