@@ -33,6 +33,7 @@
     "gulp-vulcanize": "^6.1.0",
     "inquirer": "^3.1.0",
     "mocha": "^3.4.2",
+    "parse-git-config": "^1.1.1",
     "yargs": "^8.0.2"
   },
   "repository": {
