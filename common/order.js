@@ -1,16 +1,60 @@
 class Order {
-    constructor() {
-        this.people = new Map();
-        this.tip = 0;
-        this.tax = 0;
-        this.nonTaxedFees = 0;
-        this.taxedFees = 0;
-        this.isTipPercentage = false;
+    constructor(config = {tip: 0, tax: 0, nonTaxedFees: 0, taxedFees: 0, isTipPercentage: false, people: {}}) {
+
+        // validation
+        {
+            var defaults = {
+                'isTipPercentage': false,
+                'nonTaxedFees':    0,
+                'people':          {},
+                'tax':             0,
+                'taxedFees':       0,
+                'tip':             0,
+            };
+            var typeValidationMap = {
+                'isTipPercentage': 'boolean',
+                'nonTaxedFees':    'number',
+                'people':          'object',
+                'tax':             'number',
+                'taxedFees':       'number',
+                'tip':             'number'
+            };
+
+            Object.entries(defaults).forEach(function([key, default0]) {
+                config[key] = config[key] || default0;
+            });
+
+            Object.entries(config).forEach(function([key, value]) {
+                var expectedType = typeValidationMap[key];
+                if (!expectedType) {
+                    throw new Error(`Unexpected key ${key}`);
+                }
+                if (typeof value !== expectedType) {
+                    throw new Error(`config.${key} must be of type ${expectedType}`);
+                }
+                delete typeValidationMap[key];
+            });
+            Object.keys(typeValidationMap).forEach(key => {
+                throw new Error(`Missing key ${key}`);
+            });
+            Object.values(config.people).forEach(personCost => {
+                if (typeof personCost !== 'number') {
+                    throw new Error('config.people\'s values must be numbers');
+                }
+            });
+        }
+
+        // convert object to Map
+        config.people = Object.entries(config.people).reduce((map, [key, value]) => map.set(key, value), new Map());
+
+        Object.assign(this, config);
+
         this._tipDollars = 0;
         this._tipPercentage = 0;
     }
 
     withTip(tip, asPercentage=false) {
+        console.warn('withTip() is deprecated');
         this.isTipPercentage = asPercentage;
         if(this.isTipPercentage) {
             this._tipPercentage = tip/100;
@@ -22,21 +66,25 @@ class Order {
     }
 
     withNonTaxedFees(...fees) {
+        console.warn("withNonTaxedFees() is deprecated");
         this.nonTaxedFees = fees.reduce((acc, val) => acc+val);
         return this;
     }
 
     withTaxedFees(...fees) {
+        console.warn("withTaxedFees() is deprecated");
         this.taxedFees = fees.reduce((acc, val) => acc+val);
         return this;
     }
 
     withTax(tax) {
+        console.warn("withTax() is deprecated");
         this.tax = tax;
         return this;
     }
 
     withPerson(name, price) {
+        console.warn("withPerson() is deprecated");
         let newPrice = price;
         if(this.people.has(name)) {
             newPrice += this.people.get(name);
