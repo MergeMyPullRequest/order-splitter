@@ -58,7 +58,7 @@ gulp.task('copy-files', ['clean'], function() {
     );
 });
 
-gulp.task('copy-files-ext', ['vulcanize-ext', 'clean-ext'], function() {
+gulp.task('copy-files-ext', ['vulcanize-ext'], function() {
     return merge(
         gulp.src([...dontVulcanizeTheseFiles], {base: './'}),
         gulp.src(['./chrome_extension/manifest.json', './chrome_extension/common/app-icon/*png'], {base: './chrome_extension'}),
