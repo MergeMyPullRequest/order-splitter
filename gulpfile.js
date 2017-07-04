@@ -59,19 +59,15 @@ gulp.task('copy-files', ['clean'], function() {
 
 gulp.task('copy-files-ext', ['vulcanize-ext', 'clean-ext'], function() {
     return merge(
-        gulp.src([...orderData, ...dontVulcanizeTheseFiles], {base: './'})
-            .pipe(gulp.dest(extDir)),
+        gulp.src([...orderData, ...dontVulcanizeTheseFiles], {base: './'}),
         gulp.src([...copyTheseFilesToDist])
             .pipe(replace('INSERT_SHA', git.short()))
-            .pipe(debug({text: 'copied files'}))
-            .pipe(gulp.dest(extDir)),
-        gulp.src(['!./chrome_extension/popup.html', './chrome_extension/*', './common/order.js'])
-            .pipe(gulp.dest(extDir)),
+            .pipe(debug({text: 'copied files'})),
+        gulp.src(['!./chrome_extension/popup.html', './chrome_extension/*', './common/order.js']),
         gulp.src('./chrome_extension/contentScript.js')
             .pipe(transpile())
             .pipe(browserify())
-            .pipe(gulp.dest(extDir))
-    );
+    ).pipe(gulp.dest(extDir));
 });
 
 function transpile() {
