@@ -1,6 +1,7 @@
 const deployDir = './dist';
 let DEPLOY = true;
 
+/* webclient only */
 const copyTheseFilesToDist = [
     './webclient/*.ico',
     './webclient/*.png',
@@ -60,9 +61,7 @@ gulp.task('copy-files', ['clean'], function() {
 gulp.task('copy-files-ext', ['vulcanize-ext', 'clean-ext'], function() {
     return merge(
         gulp.src([...orderData, ...dontVulcanizeTheseFiles], {base: './'}),
-        gulp.src([...copyTheseFilesToDist])
-            .pipe(replace('INSERT_SHA', git.short()))
-            .pipe(debug({text: 'copied files'})),
+        gulp.src(['./common/app-icon/*png'], {base: './'}),
         gulp.src(['!./chrome_extension/popup.html', './chrome_extension/*', './common/order.js']),
         gulp.src('./chrome_extension/contentScript.js')
             .pipe(transpile())
