@@ -1,11 +1,11 @@
 class Order {
-    constructor(config = {tip: 0, tax: 0, nonTaxedFees: 0, taxedFees: 0, isTipPercentage: false, people: {}}) {
+    constructor(config = {tip: 0, tax: 0, untaxedFees: 0, taxedFees: 0, isTipPercentage: false, people: {}}) {
 
         // validation
         {
             var defaults = {
                 'isTipPercentage': false,
-                'nonTaxedFees':    0,
+                'untaxedFees':     0,
                 'people':          {},
                 'tax':             0,
                 'taxedFees':       0,
@@ -13,7 +13,7 @@ class Order {
             };
             var typeValidationMap = {
                 'isTipPercentage': 'boolean',
-                'nonTaxedFees':    'number',
+                'untaxedFees':     'number',
                 'people':          'object',
                 'tax':             'number',
                 'taxedFees':       'number',
@@ -67,7 +67,7 @@ class Order {
 
     withNonTaxedFees(...fees) {
         console.warn("withNonTaxedFees() is deprecated");
-        this.nonTaxedFees = fees.reduce((acc, val) => acc+val);
+        this.untaxedFees = fees.reduce((acc, val) => acc+val);
         return this;
     }
 
@@ -105,7 +105,7 @@ class Order {
     }
 
     get fee() {
-        return this.nonTaxedFees;
+        return this.untaxedFees;
     }
 
     get tipPercent() {
@@ -156,7 +156,7 @@ class Order {
         ret.people = Array.from(this.people);
         ret.tipDollars = this.tipDollars;
         ret.tax = this.tax;
-        ret.nonTaxedFees = this.nonTaxedFees;
+        ret.untaxedFees = this.untaxedFees;
         ret.taxedFees = this.taxedFees;
         ret.isTipPercentage = this.isTipPercentage;
         return ret;
@@ -168,7 +168,7 @@ class Order {
         order.people = new Map(json.people);
         order.withTip(json.tipDollars, false)
             .withTax(json.tax)
-            .withNonTaxedFees(json.nonTaxedFees)
+            .withNonTaxedFees(json.untaxedFees)
             .withTaxedFees(json.taxedFees);
         return order.split();
     }
