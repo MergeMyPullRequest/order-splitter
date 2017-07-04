@@ -1,4 +1,7 @@
 class Order {
+    static split(config) {
+        return new Order(config).split();
+    }
     constructor(config = {tip: 0, tax: 0, untaxedFees: 0, taxedFees: 0, isTipPercentage: false, people: {}}) {
 
         // validation
@@ -48,20 +51,19 @@ class Order {
         config.people = Object.entries(config.people).reduce((map, [key, value]) => map.set(key, value), new Map());
 
         Object.assign(this, config);
-
-        this._tipDollars = 0;
-        this._tipPercentage = 0;
     }
 
     withTip(tip, asPercentage=false) {
         console.warn('withTip() is deprecated');
         this.isTipPercentage = asPercentage;
-        if(this.isTipPercentage) {
-            this._tipPercentage = tip/100;
-        }
-        else {
-            this._tipDollars = tip;
-        }
+        this.tip = tip;
+        this.isTipPercentage = asPercentage;
+        // if(this.isTipPercentage) {
+        //     this._tipPercentage = tip/100;
+        // }
+        // else {
+        //     this._tipDollars = tip;
+        // }
         return this;
     }
 
@@ -110,16 +112,21 @@ class Order {
 
     get tipPercent() {
         if(this.isTipPercentage) {
-            return this._tipPercentage;
+            return this.tip;
+        } else {
+            if(this.subTotal === 0) {
+                return 0;
+            }
+            return this.tipDollars / this.subTotal;
         }
-        if(this.subTotal === 0) {
-            return 0;
-        }
-        return this._tipDollars / this.subTotal;
     }
 
     get tipDollars() {
-        return this.tipPercent * this.subTotal;
+        if (this.isTipPercentage) {
+            return this.tipPercent * this.subTotal;
+        } else {
+            return this.tip;
+        }
     }
 
     get feesPerPerson() {
