@@ -209,7 +209,7 @@
                     return link;
                 }
                 _handleQueryStringChanged(e, {value}) {
-                    this.order = new QueryStringParserLocal().parse(value).split();
+                    this.order = new QueryStringParserLocal().parse();
                 }
 
             });

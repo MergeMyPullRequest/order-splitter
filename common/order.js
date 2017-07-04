@@ -131,12 +131,20 @@ class Order {
         return this.subTotal + this.fee + this.tipDollars + this.tax;
     }
 
+    get hasPeople() {
+        return !!Array.from(this.people.values()).length;
+    }
+
     split() {
 
+        this.totals = new Map();
+        if (!this.hasPeople) {
+            this.subTotal, this.totalPrice = 0;
+            return this;
+        }
         this.subTotal = Array.from(this.people.values()).reduce((sum, value) => sum+value);
         this.subTotal += this.taxedFees;
 
-        this.totals = new Map();
         for (let [name, price] of this.people.entries()) {
             let totalForPerson = price;
             totalForPerson += price * this.taxPercent;

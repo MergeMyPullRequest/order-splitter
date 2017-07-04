@@ -72,29 +72,33 @@
          * @returns {Order} An order parsed from the URL query string
          */
         parse(queryString) {
-            var pairs = queryString.split('&');
-            let order = new Order();
-
-            for (var i = 0; i < pairs.length; i++) {
-                var pairValues = pairs[i].split('=');
-
-                pairValues[1] = Number(pairValues[1]);
-
-                if(pairValues[0] === 'fee') {
-                    order.withNonTaxedFees(pairValues[1]);
-                }
-                else if(pairValues[0] === 'tax') {
-                    order.withTax(pairValues[1]);
-                } 
-                else if(pairValues[0] === 'tip') {
-                    order.withTip(pairValues[1]);
-                } 
-                else {
-                    order.withPerson(decodeURIComponent(pairValues[0]), pairValues[1]);
-                }
+            if (!location.search.length) {
+                return undefined;
             }
+            var params = location.search.slice(1).split('&');
+            console.debug('params', params);
 
-            return order;
+            let people={}, untaxedFees, tax, tip;
+
+            params.map(param=>param.split('=')).forEach(function([key,value]) {
+                key = decodeURIComponent(key);
+                value = Number(decodeURIComponent(value));
+                switch (key) {
+                    case 'fee':
+                        untaxedFees = value;
+                        break;
+                    case 'tax':
+                        tax = value;
+                        break;
+                    case 'tip':
+                        tip = value;
+                        break;
+                    default:
+                        people[key] = value;
+                }
+            });
+
+            return Order.split({people, untaxedFees, tax, tip});
         }
     }
 
