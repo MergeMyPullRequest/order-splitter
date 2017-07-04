@@ -62,6 +62,11 @@
             window.Order = require('../common/order.js');;
             defineCustomElement('order-input', class extends Polymer.Element {
                 _onInputChanged() {
+                    {
+                        let header = this.$.input.querySelector('header');
+                        if (header) header.hidden = true;
+                    }
+
                     var order = new parsers.OrderUpHtmlParser().parse(this.$.input);
                     console.log('order', order);
                     this._changeUrl(order);
