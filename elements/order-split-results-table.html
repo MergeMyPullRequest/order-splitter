@@ -94,6 +94,9 @@
                     }
                 }
                 _computeBreakdownItems(people) {
+                    if (!people) {
+                        return [];
+                    }
                     return Array.from(this.order.people.entries()).map(entry => {
                         return {
                             name: entry[0],
@@ -125,11 +128,11 @@
                     };
                 }
                 _onOrderChanged(order) {
-                    if (this.order.constructor !== Order) {
+                    console.log(order);
+                    if (order && order.constructor !== Order) {
                         throw new Error('order must be of type Order');
                     }
-                    this.hidden = false;
-                    console.log('order', order);
+                    this.hidden = !order;
                 }
                 /**
                  * Returns a string of a number in the format "#.##"
@@ -147,6 +150,9 @@
                  * @returns {string} A view mapping names to split costs
                  */
                 _makeTextForClipboard(totals) {
+                    if (!this.order) {
+                        return;
+                    }
                     // get length of longest name
                     var longestName = -1;
                     for (var [person, price] of totals) {
@@ -189,6 +195,10 @@
                     return breakdown;
                 }
                 _makeUrl(order) {
+                    if (!this.order) {
+                        return
+                    }
+
                     let link;
                     if(this.origin) {
                         link = this.origin;

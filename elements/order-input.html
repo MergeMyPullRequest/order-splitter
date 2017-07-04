@@ -98,6 +98,10 @@
                 //     localStorage.setItem('usePercentForTip', JSON.stringify(!this.usePercentForTip));
                 // }
                 _changeUrl(order) {
+                    if (!order || !order.hasPeople) {
+                        this.$.location.query = '';
+                        return;
+                    }
                     let query = 'tax=' + order.tax + '&fee=' + order.fee + '&tip=' + order.tipDollars;
 
                     for (var [person, val] of order.people) {
