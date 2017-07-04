@@ -62,53 +62,14 @@
             window.Order = require('../common/order.js');;
             defineCustomElement('order-input', class extends Polymer.Element {
                 _test() {
-
-                    // var highlight = element => element.style.backgroundColor = 'yellow';
-                    var highlight = element => {
-                        element.style.background = 'repeating-linear-gradient(45deg, yellow, yellow 10px, #fafa0a 10px, #fafa0a 20px )';
-                        element.title = 'OrderSplitter is using this value';
-                    }
-
-                    var summaryTable = Array.from(this.$.input.querySelectorAll('#order-confirmation-page tr'));
-                    if (summaryTable) {
-                        summaryTable.map(tr => Array.from(tr.querySelectorAll('td'))).filter(tds => tds.length).forEach(([left_td, center_td, right_td]) => {
-                            let label, price;
-
-                            if (right_td && right_td.classList.contains('price-table')) {
-                                price = right_td.innerText;
-                                highlight(right_td);
-                                console.log('price', price);
-                            }
-
-                            if (center_td && (label = center_td.querySelector('li strong'))) {
-                                highlight(label);
-                                label = label.innerText;
-                                console.log('label', label);
-                            }
-                        });
-                    }
-
-                    var infoTable = Array.from(this.$.input.querySelectorAll('div.order-information tr'));
-                    console.log('infoTable', infoTable);
-                    if (infoTable) {
-                        infoTable.map(tr => Array.from(tr.querySelectorAll('td'))).filter(tds => tds.length).forEach(([left, right]) => {
-                            [
-                                'Sales Tax',
-                                'Processing Fee',
-                                'Delivery Fee',
-                                'Tip'
-                            ].forEach(chargeLabel => {
-                                if (left.textContent === chargeLabel) {
-                                    console.log(chargeLabel, right.textContent);
-                                    highlight(right);
-                                }
-                            });
-                        });
-                    }
+                    var order = new parsers.OrderUpHtmlParser().parse(this.$.input);
+                    console.log('order', order);
+                    this._changeUrl(order);
                 }
                 ready() {
                     super.ready();
                     this.usePercentForTip = JSON.parse(localStorage.getItem('usePercentForTip'));
+                    this.$.input.focus();
                 }
                 _computeTipPercentClass() {
                     return this.usePercentForTip ? '' : 'hidden';

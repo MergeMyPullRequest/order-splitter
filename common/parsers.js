@@ -1,6 +1,68 @@
 (function() {
     const Order = require('./order.js');
 
+    class OrderUpHtmlParser {
+        parse(containerElement) {
+
+            var highlight = element => {
+                element.style.background = 'repeating-linear-gradient(45deg, yellow, yellow 10px, #fafa0a 10px, #fafa0a 20px )';
+                element.title = 'OrderSplitter is using this value';
+            };
+
+            var untaxedFees = 0, tip, tax, people;
+
+            var summaryTable = Array.from(containerElement.querySelectorAll('#order-confirmation-page tr'));
+            if (summaryTable) {
+                [people] = summaryTable.map(tr => Array.from(tr.querySelectorAll('td'))).filter(tds => tds.length).reduce(function([people, lastItemCost], [left_td, center_td, right_td]) {
+                    let name, price;
+
+                    if (right_td && right_td.classList.contains('price-table')) {
+                        price = right_td.innerText;
+                        highlight(right_td);
+                        lastItemCost = Number(price.match('\\$([0-9.]+)')[1]);
+                    }
+
+                    if (center_td && (name = center_td.querySelector('li strong'))) {
+                        highlight(name);
+                        name = name.innerText;
+                        people[name] = lastItemCost;
+                        lastItemCost = null;
+                    }
+
+                    return [people, lastItemCost];
+                }, [{}, null]);
+            }
+
+            var infoTable = Array.from(containerElement.querySelectorAll('div.order-information tr'));
+            if (infoTable) {
+                infoTable.map(tr => Array.from(tr.querySelectorAll('td'))).filter(tds => tds.length).forEach(function([left, right]) {
+
+                    let match = right.textContent.match('\\$([0-9.]+)');
+                    var value = match && Number(match[1]);
+
+                    switch (left.textContent) {
+                        case 'Sales Tax':
+                            tax = value;
+                            highlight(right);
+                            break;
+                        case 'Processing Fee':
+                        case 'Delivery Fee':
+                            untaxedFees += value;
+                            highlight(right);
+                            break;
+                        case 'Tip':
+                            console.log('%cgot tip', 'font-size:15px');
+                            console.log(value);
+                            tip = value;
+                            highlight(right);
+                            break;
+                    }
+                });
+            }
+            return Order.split({people, untaxedFees, tip, tax});
+        }
+    }
+
     class QueryStringParser {
         /**
          * Parses input from a URL query string into an Order.
@@ -105,5 +167,5 @@
             return order;
         }
     }
-    module.exports = {OrderUpParser, QueryStringParser, CsvParser};
+    module.exports = {OrderUpParser, QueryStringParser, CsvParser, OrderUpHtmlParser};
 })();
