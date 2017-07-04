@@ -10,7 +10,7 @@
             }
             span.chip {
                 @apply(--paper-font-common-base);
-                background-color: var(--paper-grey-300);
+                /* background-color: var(--paper-grey-300); */
                 padding: 5px;
                 border-radius: 14px;
                 line-height: 38px;
@@ -18,8 +18,13 @@
             td {
                 white-space: nowrap; /* maintain dignity on small-width windows */
             }
+            div#main {
+                padding: 20px;
+                margin: 20px;
+                background: white;
+            }
         </style>
-        <div>
+        <div id="main">
             <table>
                 <tr>
                     <td style="font-weight:bold;">Everyone</td>
@@ -68,7 +73,7 @@
                     </tr>
                 </template>
             </table>
-            <paper-button on-tap="_onClipboardTap">Copy to Clipboard</paper-button>
+            <paper-button on-tap="_onClipboardTap" raised>Copy to Clipboard</paper-button>
             <a href="[[_makeUrl(order)]]">link</a>
             <textarea id="textForClipboard" value="[[_makeTextForClipboard(order.totals)]]" hidden></textarea>
 
