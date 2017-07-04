@@ -62,7 +62,7 @@ gulp.task('copy-files-ext', ['vulcanize-ext', 'clean-ext'], function() {
     return merge(
         gulp.src([...orderData, ...dontVulcanizeTheseFiles], {base: './'}),
         gulp.src(['./common/app-icon/*png'], {base: './'}),
-        gulp.src(['!./chrome_extension/popup.html', './chrome_extension/*', './common/order.js']),
+        gulp.src(['!./chrome_extension/popup.html', './chrome_extension/*']),
         gulp.src('./chrome_extension/contentScript.js')
             .pipe(transpile())
             .pipe(browserify())

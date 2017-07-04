@@ -18,7 +18,6 @@
     "32":  "./common/app-icon/ordersplitter32.png",
     "128":  "./common/app-icon/ordersplitter128.png"
   },
-  "web_accessible_resources": ["./order.js"],
   "permissions": [
     "activeTab",
     "storage"
