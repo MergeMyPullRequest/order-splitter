@@ -58,12 +58,6 @@ class Order {
         this.isTipPercentage = asPercentage;
         this.tip = tip;
         this.isTipPercentage = asPercentage;
-        // if(this.isTipPercentage) {
-        //     this._tipPercentage = tip/100;
-        // }
-        // else {
-        //     this._tipDollars = tip;
-        // }
         return this;
     }
 
