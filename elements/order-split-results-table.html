@@ -124,10 +124,6 @@
                         order: {
                             type: Object,
                             observer: '_onOrderChanged'
-                        },
-                        origin: {
-                            type: String,
-                            value: "https://mergemypullrequest.github.io/order-splitter/"
                         }
                     };
                 }
@@ -200,27 +196,17 @@
                 }
                 _makeUrl(order) {
                     if (!this.order) {
-                        return
+                        return;
                     }
 
-                    let link;
-                    if(this.origin) {
-                        link = this.origin;
-                    }
-                    else {
-                        link = window.location.origin + window.location.pathname;
-                    }
-                    if (link.indexOf('index.html') === -1) {
-                        link += 'index.html';
-                    }
+                    var params = {};
+                    params.tax = order.tax;
+                    params.fee = order.fee;
+                    params.tip = order.tipDollars;
 
-                    link += '?tax=' + order.tax + '&fee=' + order.fee + '&tip=' + order.tipDollars;
+                    var paramString = [...Object.entries(params), ...order.people.entries()].map(([key, value]) => `${key}=${value}`).join('&');
 
-                    for (var [person, val] of order.people) {
-                        link += '&' + encodeURIComponent(person) + '=' + this._prettifyNumber(val);
-                    }
-
-                    return link;
+                    return location.href.split('?')[0] + '?' + paramString;
                 }
                 _handleQueryStringChanged(e, {value}) {
                     this.order = new QueryStringParserLocal().parse();
