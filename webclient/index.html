@@ -27,11 +27,15 @@
         <!-- Tile icon for Win8 (144x144) -->
         <meta name="msapplication-TileImage" content="ordersplitter144.png" async>
 
+        <script>
+            if('customElements' in window) {
+                document.getElementById('webcomponent-polyfill').remove();
+            } else {
+                console.warn("polyfilling window.customElements");
+            }
+        </script>
         <script src="./bower_components/webcomponentsjs/custom-elements-es5-adapter.js"></script>
-        <!--
-        <script src="../bower_components/webcomponentsjs/webcomponents-lite.js"></script>
-        -->
-        <script src="polyfills.js"></script>
+        <script src="../bower_components/webcomponentsjs/webcomponents-lite.js" id="webcomponent-polyfill"></script>
 
         <script src="../common/main.js"></script>
         <script src="sw-install.js"></script>
