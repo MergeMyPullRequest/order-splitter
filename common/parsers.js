@@ -149,7 +149,7 @@
             const order = new Order();
 
             const lines = csv.split('\n');
-            for(const line of lines) {
+            for(let line of lines) {
                 if(line.trim() !== '') {
                     const [name, ...priceStrings] = line.split(',');
                     const price = priceStrings.map(ps => Number(ps.trim().replace('$',''))).reduce((p,acc) => p+acc, 0);
