@@ -51,8 +51,6 @@
                             highlight(right);
                             break;
                         case 'Tip':
-                            console.log('%cgot tip', 'font-size:15px');
-                            console.log(value);
                             tip = value;
                             highlight(right);
                             break;
