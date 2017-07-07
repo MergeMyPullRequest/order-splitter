@@ -14,7 +14,8 @@ const orderData = [
 ];
 
 const dontVulcanizeTheseFiles = [
-    './bower_components/webcomponentsjs/custom-elements-es5-adapter.js'
+    './bower_components/webcomponentsjs/custom-elements-es5-adapter.js',
+    './bower_components/webcomponentsjs/webcomponents-lite.js'
 ];
 
 var argv = require('yargs').argv;

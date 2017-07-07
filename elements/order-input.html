@@ -29,67 +29,90 @@
             span[slot="prefix"] {
                 padding-right: 2px;
             }
+            div[contenteditable] {
+                border: 1px dotted black;
+                overflow-x: auto;
+                overflow-y: auto;
+                height: 500px;
+            }
         </style>
         <div>
-            <textarea id="textarea" rows="20" cols="60" placeholder="Paste order details here" autofocus></textarea>
-            <paper-input type="number" label="Taxes" id="tax">
-                <span slot="prefix">$</span>
-            </paper-input>
-            <paper-input type="number" label="Fees"  id="fee">
-                <span slot="prefix">$</span>
-            </paper-input>
-            <div id="tipContainer">
-            <paper-input type="number" label="Tip"   id="tip">
-                <span slot="prefix" class$="[[_computeTipDollarClass(usePercentForTip)]]">$</span>
-                <span slot="suffix" class$="[[_computeTipPercentClass(usePercentForTip)]]">%</span>
-            </paper-input>
-            <paper-checkbox checked="{{usePercentForTip}}" on-tap="_onCheckboxTap">Percentage</paper-checkbox>
-            </div>
-            <paper-button id="split" on-tap="_onSplitButtonTap">Split</paper-button>
+            <div id="input" contenteditable="true" on-input="_onInputChanged" autofocus></div>
+            <!-- <textarea id="textarea" rows="20" cols="60" placeholder="Paste order details here"></textarea> -->
+            <!-- <paper&#45;input type="number" label="Taxes" id="tax"> -->
+            <!--     <span slot="prefix">$</span> -->
+            <!-- </paper&#45;input> -->
+            <!-- <paper&#45;input type="number" label="Fees"  id="fee"> -->
+            <!--     <span slot="prefix">$</span> -->
+            <!-- </paper&#45;input> -->
+            <!-- <div id="tipContainer"> -->
+            <!-- <paper&#45;input type="number" label="Tip"   id="tip"> -->
+            <!--     <span slot="prefix" class$="[[_computeTipDollarClass(usePercentForTip)]]">$</span> -->
+            <!--     <span slot="suffix" class$="[[_computeTipPercentClass(usePercentForTip)]]">%</span> -->
+            <!-- </paper&#45;input> -->
+            <!-- <paper&#45;checkbox checked="{{usePercentForTip}}" on&#45;tap="_onCheckboxTap">Percentage</paper&#45;checkbox> -->
+            <!-- </div> -->
+            <!-- <paper&#45;button id="split" on&#45;tap="_onSplitButtonTap">Split</paper&#45;button> -->
         </div>
         <iron-location id="location"></iron-location>
     </template>
     <script>
         (function() {
             const parsers = require('../common/parsers.js');
+            window.Order = require('../common/order.js');;
             defineCustomElement('order-input', class extends Polymer.Element {
+                _onInputChanged() {
+                    {
+                        let header = this.$.input.querySelector('header');
+                        if (header) header.hidden = true;
+                    }
+
+                    var order = new parsers.OrderUpHtmlParser().parse(this.$.input);
+                    console.log('order', order);
+                    this._changeUrl(order);
+                }
                 ready() {
                     super.ready();
                     this.usePercentForTip = JSON.parse(localStorage.getItem('usePercentForTip'));
+                    this.$.input.focus();
                 }
-                _computeTipPercentClass() {
-                    return this.usePercentForTip ? '' : 'hidden';
-                }
-                _computeTipDollarClass() {
-                    return !this.usePercentForTip ? '' : 'hidden';
-                }
-                _onSplitButtonTap() {
-                    var text = this.$.textarea.value;
-                    var tax = Number(this.$.tax.value || 0);
-                    var fee = Number(this.$.fee.value || 0);
-                    var tip = Number(this.$.tip.value || 0);
-                    var isTipPercentage = this.usePercentForTip;
-
-                    var order;
-                    try {
-                        order =  new parsers.OrderUpParser().parse(text, fee, tax, tip, isTipPercentage).split();
-                    } catch(e) {
-                        console.error('OrderUp parser failed', e);
-                        console.log('trying csv parser');
-                        order =  new parsers.CsvParser().parse(text).split();
-                    }
-                    this._changeUrl(order);
-                }
+                // _computeTipPercentClass() {
+                //     return this.usePercentForTip ? '' : 'hidden';
+                // }
+                // _computeTipDollarClass() {
+                //     return !this.usePercentForTip ? '' : 'hidden';
+                // }
+                // _onSplitButtonTap() {
+                //     var text = this.$.textarea.value;
+                //     var tax = Number(this.$.tax.value || 0);
+                //     var fee = Number(this.$.fee.value || 0);
+                //     var tip = Number(this.$.tip.value || 0);
+                //     var isTipPercentage = this.usePercentForTip;
+                //
+                //     var order;
+                //     try {
+                //         order =  new parsers.OrderUpParser().parse(text, fee, tax, tip, isTipPercentage).split();
+                //     } catch(e) {
+                //         console.error('OrderUp parser failed', e);
+                //         console.log('trying csv parser');
+                //         order =  new parsers.CsvParser().parse(text).split();
+                //     }
+                //     this._changeUrl(order);
+                // }
+                // _onCheckboxTap() {
+                //     localStorage.setItem('usePercentForTip', JSON.stringify(!this.usePercentForTip));
+                // }
                 _changeUrl(order) {
+                    if (!order || !order.hasPeople) {
+                        this.$.location.query = '';
+                        return;
+                    }
                     let query = 'tax=' + order.tax + '&fee=' + order.fee + '&tip=' + order.tipDollars;
 
                     for (var [person, val] of order.people) {
                         query += '&' + encodeURIComponent(person) + '=' + Utils._prettifyNumber(val);
                     }
                     this.$.location.query = query;
-                }
-                _onCheckboxTap() {
-                    localStorage.setItem('usePercentForTip', JSON.stringify(!this.usePercentForTip));
                 }
             });
         })();

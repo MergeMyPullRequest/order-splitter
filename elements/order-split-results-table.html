@@ -10,7 +10,7 @@
             }
             span.chip {
                 @apply(--paper-font-common-base);
-                background-color: var(--paper-grey-300);
+                /* background-color: var(--paper-grey-300); */
                 padding: 5px;
                 border-radius: 14px;
                 line-height: 38px;
@@ -18,8 +18,13 @@
             td {
                 white-space: nowrap; /* maintain dignity on small-width windows */
             }
+            div#main {
+                padding: 20px;
+                margin: 20px;
+                background: white;
+            }
         </style>
-        <div>
+        <div id="main">
             <table>
                 <tr>
                     <td style="font-weight:bold;">Everyone</td>
@@ -68,8 +73,7 @@
                     </tr>
                 </template>
             </table>
-            <paper-button on-tap="_onClipboardTap">Copy to Clipboard</paper-button>
-            <a href="[[_makeUrl(order)]]">link</a>
+            <paper-button on-tap="_onClipboardTap" raised>Copy to Clipboard</paper-button>
             <textarea id="textForClipboard" value="[[_makeTextForClipboard(order.totals)]]" hidden></textarea>
 
             <iron-location 
@@ -94,6 +98,9 @@
                     }
                 }
                 _computeBreakdownItems(people) {
+                    if (!people) {
+                        return [];
+                    }
                     return Array.from(this.order.people.entries()).map(entry => {
                         return {
                             name: entry[0],
@@ -117,19 +124,15 @@
                         order: {
                             type: Object,
                             observer: '_onOrderChanged'
-                        },
-                        origin: {
-                            type: String,
-                            value: "https://mergemypullrequest.github.io/order-splitter/"
                         }
                     };
                 }
                 _onOrderChanged(order) {
-                    if (this.order.constructor !== Order) {
+                    console.log(order);
+                    if (order && order.constructor !== Order) {
                         throw new Error('order must be of type Order');
                     }
-                    this.hidden = false;
-                    console.log('order', order);
+                    this.hidden = !order;
                 }
                 /**
                  * Returns a string of a number in the format "#.##"
@@ -147,6 +150,9 @@
                  * @returns {string} A view mapping names to split costs
                  */
                 _makeTextForClipboard(totals) {
+                    if (!this.order) {
+                        return;
+                    }
                     // get length of longest name
                     var longestName = -1;
                     for (var [person, price] of totals) {
@@ -189,27 +195,21 @@
                     return breakdown;
                 }
                 _makeUrl(order) {
-                    let link;
-                    if(this.origin) {
-                        link = this.origin;
-                    }
-                    else {
-                        link = window.location.origin + window.location.pathname;
-                    }
-                    if (link.indexOf('index.html') === -1) {
-                        link += 'index.html';
+                    if (!this.order) {
+                        return;
                     }
 
-                    link += '?tax=' + order.tax + '&fee=' + order.fee + '&tip=' + order.tipDollars;
+                    var params = {};
+                    params.tax = order.tax;
+                    params.fee = order.fee;
+                    params.tip = order.tipDollars;
 
-                    for (var [person, val] of order.people) {
-                        link += '&' + encodeURIComponent(person) + '=' + this._prettifyNumber(val);
-                    }
+                    var paramString = [...Object.entries(params), ...order.people.entries()].map(([key, value]) => `${key}=${value}`).join('&');
 
-                    return link;
+                    return location.href.split('?')[0] + '?' + paramString;
                 }
                 _handleQueryStringChanged(e, {value}) {
-                    this.order = new QueryStringParserLocal().parse(value).split();
+                    this.order = new QueryStringParserLocal().parse();
                 }
 
             });
