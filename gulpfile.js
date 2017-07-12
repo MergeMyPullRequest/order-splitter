@@ -1,6 +1,7 @@
 const deployDir = './dist';
 let DEPLOY = true;
 
+/* webclient only */
 const copyTheseFilesToDist = [
     './webclient/*.ico',
     './webclient/*.png',
@@ -58,21 +59,14 @@ gulp.task('copy-files', ['clean'], function() {
     );
 });
 
-gulp.task('copy-files-ext', ['vulcanize-ext', 'clean-ext'], function() {
+gulp.task('copy-files-ext', ['vulcanize-ext'], function() {
     return merge(
-        gulp.src([...orderData, ...dontVulcanizeTheseFiles], {base: './'})
-            .pipe(gulp.dest(extDir)),
-        gulp.src([...copyTheseFilesToDist])
-            .pipe(replace('INSERT_SHA', git.short()))
-            .pipe(debug('copied files'))
-            .pipe(gulp.dest(extDir)),
-        gulp.src(['!./chrome_extension/popup.html', './chrome_extension/*', './common/order.js'])
-        .pipe(gulp.dest(extDir)),
+        gulp.src([...dontVulcanizeTheseFiles], {base: './'}),
+        gulp.src(['./chrome_extension/manifest.json', './chrome_extension/common/app-icon/*png'], {base: './chrome_extension'}),
         gulp.src('./chrome_extension/contentScript.js')
-        .pipe(transpile())
-        .pipe(browserify())
-        .pipe(gulp.dest(extDir))
-    );
+            .pipe(transpile())
+            .pipe(browserify())
+    ).pipe(gulp.dest(extDir));
 });
 
 function transpile() {
