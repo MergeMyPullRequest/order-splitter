@@ -40,7 +40,7 @@
                     let match = right.textContent.match('\\$([0-9.]+)');
                     var value = match && Number(match[1]);
 
-                    switch (left.textContent) {
+                    switch (left.textContent.trim()) {
                         case 'Sales Tax':
                             tax = value;
                             highlight(right);
