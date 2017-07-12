@@ -36,10 +36,10 @@ function parseOrderUpDom() {
                 order.withTax(price);
                 break;
             case('Processing Fee'):
-                order.withNonTaxedFees(order.nonTaxedFees + price);
+                order.withNonTaxedFees(order.untaxedFees + price);
                 break;
             case('Delivery Fee'):
-                order.withNonTaxedFees(order.nonTaxedFees + price);
+                order.withNonTaxedFees(order.untaxedFees + price);
                 break;
             case('Tip'):
                 order.withTip(price);

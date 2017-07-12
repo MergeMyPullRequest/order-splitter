@@ -27,11 +27,15 @@
         <!-- Tile icon for Win8 (144x144) -->
         <meta name="msapplication-TileImage" content="ordersplitter144.png" async>
 
+        <script>
+            if('customElements' in window) {
+                document.getElementById('webcomponent-polyfill').remove();
+            } else {
+                console.warn("polyfilling window.customElements");
+            }
+        </script>
         <script src="./bower_components/webcomponentsjs/custom-elements-es5-adapter.js"></script>
-        <!--
-        <script src="../bower_components/webcomponentsjs/webcomponents-lite.js"></script>
-        -->
-        <script src="polyfills.js"></script>
+        <script src="./bower_components/webcomponentsjs/webcomponents-lite.js" id="webcomponent-polyfill"></script>
 
         <script src="../common/main.js"></script>
         <script src="sw-install.js"></script>
@@ -102,7 +106,10 @@
                 font-size: 30px;
                 margin-bottom: 15px;
             }
-            .step:not(:first-of-type) {
+            /* .step:not(:first-of-type) { */
+            /*     margin-bottom: 20px; */
+            /* } */
+            .step {
                 margin-bottom: 20px;
             }
             .step-text {
@@ -123,6 +130,7 @@
                 alert('Whoops. The cached files on your machine are out of sync with each other. That\'s our bad. Please hard-refresh the page?');
             }
         </script>
+        <order-split-results-table id="table"></order-split-results-table>
         <div class="wrapper">
             <div class="left-panel">
                 <div class="logo-wrapper">
@@ -138,22 +146,15 @@
                     <span class="number"><h3>1</h3></span>
                     <span class="step-text">Copy order details from OrderUp</span>
                 </div>
-                <div>
-                    <pre>
-                        <example-order></example-order>
-                    </pre>
-                </div>
                 <div class="step">
                     <span class="number"><h3>2</h3></span>
-                    <span class="step-text">Enter taxes, fees, and tip</span>
+                    <span class="step-text">Paste here</span>
                 </div>
                 <div class="step">
                     <span class="number"><h3>3</h3></span>
-                    <span class="step-text">Split order</span>
+                    <span class="step-text">Share the results</span>
                 </div>
             </div>
         </div>
-        <p id="result"></p>
-        <order-split-results-table id="table"></order-split-results-table>
     </body>
 </html>
