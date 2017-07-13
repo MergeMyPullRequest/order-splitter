@@ -25,7 +25,8 @@
                     if (center_td && (name = center_td.querySelector('li strong'))) {
                         highlight(name);
                         name = name.innerText;
-                        people[name] = lastItemCost;
+                        people[name] = people[name] || 0;
+                        people[name] += lastItemCost;
                         lastItemCost = null;
                     }
 
