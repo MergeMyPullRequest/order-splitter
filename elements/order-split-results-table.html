@@ -26,28 +26,6 @@
         </style>
         <div id="main">
             <table>
-                <tr>
-                    <td style="font-weight:bold;">Everyone</td>
-                    <td>
-                        <span class="chip">$[[_prettifyNumber(order.total)]] total<paper-tooltip>subtotal + tax + fees + tip</paper-tooltip></span>
-                    </td>
-                    <td>
-                        =
-                        <span class="chip">$[[_prettifyNumber(order.subTotal)]] subtotal<paper-tooltip>sum of item costs</paper-tooltip></span>
-                    </td>
-                    <td>
-                        +
-                        <span class="chip">$[[_prettifyNumber(order.tax)]] tax</span>
-                    </td>
-                    <td>
-                        +
-                        <span class="chip">$[[_prettifyNumber(order.fee)]] fee</span>
-                    </td>
-                    <td>
-                        +
-                        <span class="chip">$[[_prettifyNumber(order.tipDollars)]] tip</span>
-                    </td>
-                </tr>
                 <template is="dom-repeat" items="[[_computeBreakdownItems(order.people)]]">
                     <tr>
                         <td>[[item.name]]</td>
@@ -72,6 +50,28 @@
                         </td>
                     </tr>
                 </template>
+                <tr>
+                    <td style="font-weight:bold;">Everyone</td>
+                    <td>
+                        <span class="chip">$[[_prettifyNumber(order.total)]] total<paper-tooltip>subtotal + tax + fees + tip</paper-tooltip></span>
+                    </td>
+                    <td>
+                        =
+                        <span class="chip">$[[_prettifyNumber(order.subTotal)]] subtotal<paper-tooltip>sum of item costs</paper-tooltip></span>
+                    </td>
+                    <td>
+                        +
+                        <span class="chip">$[[_prettifyNumber(order.tax)]] tax</span>
+                    </td>
+                    <td>
+                        +
+                        <span class="chip">$[[_prettifyNumber(order.fee)]] fee</span>
+                    </td>
+                    <td>
+                        +
+                        <span class="chip">$[[_prettifyNumber(order.tipDollars)]] tip</span>
+                    </td>
+                </tr>
             </table>
             <paper-button on-tap="_onClipboardTap" raised>Copy to Clipboard</paper-button>
             <textarea id="textForClipboard" value="[[_makeTextForClipboard(order.totals)]]" hidden></textarea>
