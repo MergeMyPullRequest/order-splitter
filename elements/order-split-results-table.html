@@ -23,6 +23,12 @@
                 margin: 20px;
                 background: white;
             }
+            .totals-row .chip {
+                font-weight: bold;
+            }
+            .totals-row > td:first-child {
+                font-weight: bold;
+            }
         </style>
         <div id="main">
             <table>
@@ -50,8 +56,8 @@
                         </td>
                     </tr>
                 </template>
-                <tr>
-                    <td style="font-weight:bold;">Everyone</td>
+                <tr class="totals-row">
+                    <td>Everyone</td>
                     <td>
                         <span class="chip">$[[_prettifyNumber(order.subTotal)]] subtotal<paper-tooltip>sum of item costs</paper-tooltip></span>
                     </td>
