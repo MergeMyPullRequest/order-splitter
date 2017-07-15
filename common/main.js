@@ -1,8 +1,10 @@
-function defineCustomElement(tag, elementClass) {
-    customElements.define(tag, class extends elementClass {
-        static get is() { return tag; }
-    });
-}
+module.exports = {
+    defineCustomElement(tag, elementClass) {
+        customElements.define(tag, class extends elementClass {
+            static get is() { return tag; }
+        });
+    }
+};
 
 var Utils = {
     _prettifyNumber(n) {

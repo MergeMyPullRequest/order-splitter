@@ -1,0 +1,56 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<dom-module id="app-container">
+    <template>
+        <div align="right" id="sha">INSERT_SHA</div>
+        <div align="right">INSERT_BUILD_TIME</div>
+        <order-split-results-table id="table"></order-split-results-table>
+        <div class="wrapper">
+            <div class="left-panel">
+                <div class="logo-wrapper">
+                    <img src="./common/app-icon/ordersplitter-logo.png" alt="Order Splitter">
+                    <h1>Order Splitter</h1>
+                    <span class="version">INSERT_VERSION</span>
+                </div>
+                <order-input></order-input>
+            </div>
+            <div class="right-panel">
+                <div class="step">
+                    <h1>How it Works</h1>
+                    <span class="number"><h3>1</h3></span>
+                    <span class="step-text">Copy OrderUp summary page (⌘-A ⌘-C)</span>
+                </div>
+                <div class="step">
+                    <span class="number"><h3>2</h3></span>
+                    <span class="step-text">Paste here</span>
+                </div>
+                <div class="step">
+                    <span class="number"><h3>3</h3></span>
+                    <span class="step-text">Share the results</span>
+                </div>
+            </div>
+        </div>
+        <center>
+            <github-link></github-link
+        </center>
+    </template>
+</dom-module>
+<script>
+    var main = require('../common/main.js');
+    main.defineCustomElement('app-container', class extends Polymer.Element {
+        ready() {
+            super.ready();
+            console.log('%cREADY', 'font-size:15px');
+
+            {
+                // this is to help with debugging any SW caching issues if they appear
+                var scriptSha = 'INSERT_SHA';
+                var htmlSha = this.root.querySelector('#sha').innerText;
+                console.debug(`script version: ${scriptSha}`);
+                console.debug(`html version:   ${htmlSha}`);
+                if (scriptSha !== htmlSha) {
+                    alert('Whoops. The cached files on your machine are out of sync with each other. That\'s our bad. Please hard-refresh the page?');
+                }
+            }
+        }
+    });
+</script>

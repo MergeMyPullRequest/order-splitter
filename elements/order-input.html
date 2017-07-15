@@ -60,7 +60,8 @@
         (function() {
             const parsers = require('../common/parsers.js');
             window.Order = require('../common/order.js');;
-            defineCustomElement('order-input', class extends Polymer.Element {
+            var main = require('../common/main.js');
+            main.defineCustomElement('order-input', class extends Polymer.Element {
                 _onInputChanged() {
                     {
                         let header = this.$.input.querySelector('header');

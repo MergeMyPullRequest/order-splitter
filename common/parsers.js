@@ -113,6 +113,7 @@
          * @return {Order} An order parsed from the OrderUp.com confirmation summary
          */
         parse(orderUpText, fee=0, tax=0, tip=0, isTipPercentage=false) {
+            console.warn('OrderUpParser is deprecated');
             let order = new Order()
                 .withNonTaxedFees(fee)
                 .withTax(tax)
