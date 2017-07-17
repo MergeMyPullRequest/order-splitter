@@ -23,38 +23,18 @@
                 margin: 20px;
                 background: white;
             }
+            .totals-row .chip {
+                font-weight: bold;
+            }
+            .totals-row > td:first-child {
+                font-weight: bold;
+            }
         </style>
         <div id="main">
             <table>
-                <tr>
-                    <td style="font-weight:bold;">Everyone</td>
-                    <td>
-                        <span class="chip">$[[_prettifyNumber(order.total)]] total<paper-tooltip>subtotal + tax + fees + tip</paper-tooltip></span>
-                        =
-                    </td>
-                    <td>
-                        <span class="chip">$[[_prettifyNumber(order.subTotal)]] subtotal<paper-tooltip>sum of item costs</paper-tooltip></span>
-                    </td>
-                    <td>
-                        +
-                        <span class="chip">$[[_prettifyNumber(order.tax)]] tax</span>
-                    </td>
-                    <td>
-                        +
-                        <span class="chip">$[[_prettifyNumber(order.fee)]] fee</span>
-                    </td>
-                    <td>
-                        +
-                        <span class="chip">$[[_prettifyNumber(order.tipDollars)]] tip</span>
-                    </td>
-                </tr>
                 <template is="dom-repeat" items="[[_computeBreakdownItems(order.people)]]">
                     <tr>
                         <td>[[item.name]]</td>
-                        <td>
-                            <span class="chip">$[[_computePersonTotal(item.name)]]</span>
-                            =
-                        </td>
                         <td>
                             <span class="chip">$[[item.price]] price</span>
                         </td>
@@ -70,8 +50,34 @@
                             +
                             <span class="chip">$[[_multiply(item.price, order.tipPercent)]] tip <paper-tooltip>[[item.price]] x [[order.tipPercent]]</paper-tooltip></span>
                         </td>
+                        <td>
+                            =
+                            <span class="chip">$[[_computePersonTotal(item.name)]]</span>
+                        </td>
                     </tr>
                 </template>
+                <tr class="totals-row">
+                    <td>Everyone</td>
+                    <td>
+                        <span class="chip">$[[_prettifyNumber(order.subTotal)]] subtotal<paper-tooltip>sum of item costs</paper-tooltip></span>
+                    </td>
+                    <td>
+                        +
+                        <span class="chip">$[[_prettifyNumber(order.tax)]] tax</span>
+                    </td>
+                    <td>
+                        +
+                        <span class="chip">$[[_prettifyNumber(order.fee)]] fee</span>
+                    </td>
+                    <td>
+                        +
+                        <span class="chip">$[[_prettifyNumber(order.tipDollars)]] tip</span>
+                    </td>
+                    <td>
+                        =
+                        <span class="chip">$[[_prettifyNumber(order.total)]] total<paper-tooltip>subtotal + tax + fees + tip</paper-tooltip></span>
+                    </td>
+                </tr>
             </table>
             <paper-button on-tap="_onClipboardTap" raised>Copy to Clipboard</paper-button>
             <textarea id="textForClipboard" value="[[_makeTextForClipboard(order.totals)]]" hidden></textarea>
