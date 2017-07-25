@@ -128,7 +128,12 @@ class Order {
     }
 
     get feesPerPerson() {
-        return this.fee/this.people.size;
+        if (!this.hasPeople) return {};
+        var subtotal = Array.from(this.people.values()).reduce((a,b)=>a+b);
+        return Array.from(this.people.entries()).reduce((feesPerPerson, [name, price]) => {
+            feesPerPerson[name] = price/subtotal*this.untaxedFees;
+            return feesPerPerson;
+        }, {});
     }
 
     get total() {
@@ -153,7 +158,7 @@ class Order {
             let totalForPerson = price;
             totalForPerson += price * this.taxPercent;
             totalForPerson += price * this.tipPercent;
-            totalForPerson += this.feesPerPerson;
+            totalForPerson += this.feesPerPerson[name];
             this.totals.set(name, totalForPerson);
         }
         let totalPrice = Array.from(this.totals.values()).reduce((acc, val) => acc+val);

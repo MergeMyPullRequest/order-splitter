@@ -44,7 +44,7 @@
                         </td>
                         <td>
                             +
-                            <span class="chip">$[[_prettifyNumber(order.feesPerPerson)]] fee <paper-tooltip>[[order.feesPerPerson]]</paper-tooltip></span>
+                            <span class="chip">$[[_computeFeesPerPerson(order, item.name)]] fee <paper-tooltip>[[_computeFeesPerPersonTooltip(order, item.name)]]</paper-tooltip></span>
                         </td>
                         <td>
                             +
@@ -108,6 +108,12 @@
                         return [];
                     }
                     return Array.from(this.order.people.entries()).map(([name, price]) => ({ name, price }));
+                }
+                _computeFeesPerPerson(order, name) {
+                    return this._prettifyNumber(order.feesPerPerson[name]);
+                }
+                _computeFeesPerPersonTooltip(order, name) {
+                    return `${order.untaxedFees} x ${order.people.get(name)} / ${order.subTotal}`;
                 }
                 _computePersonTotal(name) {
                     return this._prettifyNumber(this.order.totals.get(name));
