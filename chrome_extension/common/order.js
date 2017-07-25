@@ -4,6 +4,10 @@ class Order {
     }
     constructor(config = {tip: 0, tax: 0, untaxedFees: 0, taxedFees: 0, isTipPercentage: false, people: {}}) {
 
+        if (config.taxedFees) {
+            console.warn("Taxed fees have not been tested and probably don't work. I was contempalting removing this feature.");
+        }
+
         // validation
         {
             var defaults = {
