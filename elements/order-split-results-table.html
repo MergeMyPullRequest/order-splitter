@@ -107,12 +107,7 @@
                     if (!people) {
                         return [];
                     }
-                    return Array.from(this.order.people.entries()).map(entry => {
-                        return {
-                            name: entry[0],
-                            price: entry[1]
-                        };
-                    });
+                    return Array.from(this.order.people.entries()).map(([name, price]) => ({ name, price }));
                 }
                 _computePersonTotal(name) {
                     return this._prettifyNumber(this.order.totals.get(name));
