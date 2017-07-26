@@ -1,4 +1,4 @@
-<html><head><title>Order Splitter</title><meta charset=UTF-8><meta name=theme-color content=#11923B><meta name=mobile-web-app-capable content=yes><meta name=application-name content=PSK><link rel=icon sizes=192x192 href=ordersplitter192.png asnyc><link rel=icon sizes=16x16 href=ordersplitter16.png><link rel=icon sizes=32x32 href=ordersplitter32.png><meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-status-bar-style content=black><meta name=apple-mobile-web-app-title content="Order Splitter"><link rel=apple-touch-icon href=ordersplitter152.png asnyc><meta name=msapplication-TileColor content=#3372DF><meta name=msapplication-TileImage content=ordersplitter144.png async><link rel=manifest href=manifest.json></head><body><div hidden by-vulcanize><dom-module id=iron-flex assetpath="../bower_components/iron-flex-layout/"><template><style>
+<html><head><title>Order Splitter</title><meta charset=UTF-8><meta name=theme-color content=#11923B><meta name=mobile-web-app-capable content=yes><meta name=application-name content=PSK><link rel=icon sizes=192x192 href=ordersplitter192.png asnyc><link rel=icon sizes=16x16 href=ordersplitter16.png><link rel=icon sizes=32x32 href=ordersplitter32.png><meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-status-bar-style content=black><meta name=apple-mobile-web-app-title content="Order Splitter"><link rel=apple-touch-icon href=ordersplitter152.png asnyc><meta name=msapplication-TileColor content=#3372DF><meta name=msapplication-TileImage content=ordersplitter144.png async><script src=./bower_components/webcomponentsjs/custom-elements-es5-adapter.js></script><script id=webcomponent-polyfill src=./bower_components/webcomponentsjs/webcomponents-lite.js></script><link rel=manifest href=manifest.json></head><body><div hidden by-vulcanize><dom-module id=iron-flex assetpath="../bower_components/iron-flex-layout/"><template><style>
       .layout.horizontal,
       .layout.vertical {
         display: -ms-flexbox;
@@ -2077,7 +2077,13 @@
             span[slot="prefix"] {
                 padding-right: 2px;
             }
-        </style><div><textarea id=textarea rows=20 cols=60 placeholder="Paste order details here" autofocus></textarea><paper-input type=number label=Taxes id=tax><span slot=prefix>$</span></paper-input><paper-input type=number label=Fees id=fee><span slot=prefix>$</span></paper-input><div id=tipContainer><paper-input type=number label=Tip id=tip><span slot=prefix class$=[[_computeTipDollarClass(usePercentForTip)]]>$</span> <span slot=suffix class$=[[_computeTipPercentClass(usePercentForTip)]]>%</span></paper-input><paper-checkbox checked={{usePercentForTip}} on-tap=_onCheckboxTap>Percentage</paper-checkbox></div><paper-button id=split on-tap=_onSplitButtonTap>Split</paper-button></div></template></dom-module><dom-module id=paper-tooltip assetpath="../bower_components/paper-tooltip/"><template><style>
+            div[contenteditable] {
+                border: 1px dotted black;
+                overflow-x: auto;
+                overflow-y: auto;
+                height: 500px;
+            }
+        </style><div><div id=input contenteditable=true on-input=_onInputChanged autofocus></div></div><iron-location id=location></iron-location></template></dom-module><dom-module id=paper-tooltip assetpath="../bower_components/paper-tooltip/"><template><style>
       :host {
         display: block;
         position: absolute;
@@ -2117,7 +2123,7 @@
             }
             span.chip {
                 @apply(--paper-font-common-base);
-                background-color: var(--paper-grey-300);
+                /* background-color: var(--paper-grey-300); */
                 padding: 5px;
                 border-radius: 14px;
                 line-height: 38px;
@@ -2125,7 +2131,29 @@
             td {
                 white-space: nowrap; /* maintain dignity on small-width windows */
             }
-        </style><div><table><tbody><tr><td style=font-weight:bold;>Everyone</td><td><span class=chip>$[[_prettifyNumber(order.subTotal)]] subtotal<paper-tooltip>sum of item costs</paper-tooltip></span></td><td>+ <span class=chip>$[[_prettifyNumber(order.tax)]] tax</span></td><td>+ <span class=chip>$[[_prettifyNumber(order.fee)]] fee</span></td><td>+ <span class=chip>$[[_prettifyNumber(order.tipDollars)]] tip</span></td><td>= <span class=chip>$[[_prettifyNumber(order.total)]] total<paper-tooltip>subtotal + tax + fees + tip</paper-tooltip></span></td></tr><template is=dom-repeat items=[[_computeBreakdownItems(order.people)]]><tr><td>[[item.name]]</td><td><span class=chip>$[[item.price]] price</span></td><td>+ <span class=chip>$[[_multiply(item.price, order.taxPercent)]] tax<paper-tooltip>[[item.price]] x [[order.taxPercent]]</paper-tooltip></span></td><td>+ <span class=chip>$[[_prettifyNumber(order.feesPerPerson)]] fee<paper-tooltip>[[order.feesPerPerson]]</paper-tooltip></span></td><td>+ <span class=chip>$[[_multiply(item.price, order.tipPercent)]] tip<paper-tooltip>[[item.price]] x [[order.tipPercent]]</paper-tooltip></span></td><td>= <span class=chip>$[[_computePersonTotal(item.name)]]</span></td></tr></template></tbody></table><paper-button on-tap=_onClipboardTap>Copy to Clipboard</paper-button><a href=[[_makeUrl(order)]]>link</a> <textarea id=textForClipboard value=[[_makeTextForClipboard(order.totals)]] hidden></textarea></div></template></dom-module><style>
+            div#main {
+                padding: 20px;
+                margin: 20px;
+                background: white;
+            }
+            .totals-row .chip {
+                font-weight: bold;
+            }
+            .totals-row > td:first-child {
+                font-weight: bold;
+            }
+        </style><div id=main><table><template is=dom-repeat items=[[_computeBreakdownItems(order.people)]]><tr><td>[[item.name]]</td><td><span class=chip>$[[item.price]] price</span></td><td>+ <span class=chip>$[[_multiply(item.price, order.taxPercent)]] tax<paper-tooltip>[[item.price]] x [[order.taxPercent]]</paper-tooltip></span></td><td>+ <span class=chip>$[[_prettifyNumber(order.feesPerPerson)]] fee<paper-tooltip>[[order.feesPerPerson]]</paper-tooltip></span></td><td>+ <span class=chip>$[[_multiply(item.price, order.tipPercent)]] tip<paper-tooltip>[[item.price]] x [[order.tipPercent]]</paper-tooltip></span></td><td>= <span class=chip>$[[_computePersonTotal(item.name)]]</span></td></tr></template><tbody><tr class=totals-row><td>Everyone</td><td><span class=chip>$[[_prettifyNumber(order.subTotal)]] subtotal<paper-tooltip>sum of item costs</paper-tooltip></span></td><td>+ <span class=chip>$[[_prettifyNumber(order.tax)]] tax</span></td><td>+ <span class=chip>$[[_prettifyNumber(order.fee)]] fee</span></td><td>+ <span class=chip>$[[_prettifyNumber(order.tipDollars)]] tip</span></td><td>= <span class=chip>$[[_prettifyNumber(order.total)]] total<paper-tooltip>subtotal + tax + fees + tip</paper-tooltip></span></td></tr></tbody></table><paper-button on-tap=_onClipboardTap raised>Copy to Clipboard</paper-button><textarea id=textForClipboard value=[[_makeTextForClipboard(order.totals)]] hidden></textarea><iron-location on-query-changed=_handleQueryStringChanged></iron-location></div></template></dom-module><dom-module id=github-link assetpath="../elements/"><template><style>
+            #mainContainer {
+                padding: 5px;
+                align-items: center;
+                display: inline-flex;
+                flex-direction: row;
+            }
+
+            #mainContainer > :first-child {
+                padding-right: 5px;
+            }
+        </style><a href=https://github.com/MergeMyPullRequest/order-splitter target=new><div id=mainContainer title="Check us out on GitHub"><svg height=24 width=24 class="octicon octicon-mark-github" viewbox="0 0 16 16" version=1.1 aria-hidden=true><path fill-rule=evenodd d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path></svg><svg class="octicon octicon-logo-github" viewbox="0 0 45 16" version=1.1 width=45 height=16 aria-hidden=true><path fill-rule=evenodd d="M18.53 12.03h-.02c.009 0 .015.01.024.011h.006l-.01-.01zm.004.011c-.093.001-.327.05-.574.05-.78 0-1.05-.36-1.05-.83V8.13h1.59c.09 0 .16-.08.16-.19v-1.7c0-.09-.08-.17-.16-.17h-1.59V3.96c0-.08-.05-.13-.14-.13h-2.16c-.09 0-.14.05-.14.13v2.17s-1.09.27-1.16.28c-.08.02-.13.09-.13.17v1.36c0 .11.08.19.17.19h1.11v3.28c0 2.44 1.7 2.69 2.86 2.69.53 0 1.17-.17 1.27-.22.06-.02.09-.09.09-.16v-1.5a.177.177 0 0 0-.146-.18zm23.696-2.2c0-1.81-.73-2.05-1.5-1.97-.6.04-1.08.34-1.08.34v3.52s.49.34 1.22.36c1.03.03 1.36-.34 1.36-2.25zm2.43-.16c0 3.43-1.11 4.41-3.05 4.41-1.64 0-2.52-.83-2.52-.83s-.04.46-.09.52c-.03.06-.08.08-.14.08h-1.48c-.1 0-.19-.08-.19-.17l.02-11.11c0-.09.08-.17.17-.17h2.13c.09 0 .17.08.17.17v3.77s.82-.53 2.02-.53l-.01-.02c1.2 0 2.97.45 2.97 3.88zm-8.72-3.61H33.84c-.11 0-.17.08-.17.19v5.44s-.55.39-1.3.39-.97-.34-.97-1.09V6.25c0-.09-.08-.17-.17-.17h-2.14c-.09 0-.17.08-.17.17v5.11c0 2.2 1.23 2.75 2.92 2.75 1.39 0 2.52-.77 2.52-.77s.05.39.08.45c.02.05.09.09.16.09h1.34c.11 0 .17-.08.17-.17l.02-7.47c0-.09-.08-.17-.19-.17zm-23.7-.01h-2.13c-.09 0-.17.09-.17.2v7.34c0 .2.13.27.3.27h1.92c.2 0 .25-.09.25-.27V6.23c0-.09-.08-.17-.17-.17zm-1.05-3.38c-.77 0-1.38.61-1.38 1.38 0 .77.61 1.38 1.38 1.38.75 0 1.36-.61 1.36-1.38 0-.77-.61-1.38-1.36-1.38zm16.49-.25h-2.11c-.09 0-.17.08-.17.17v4.09h-3.31V2.6c0-.09-.08-.17-.17-.17h-2.13c-.09 0-.17.08-.17.17v11.11c0 .09.09.17.17.17h2.13c.09 0 .17-.08.17-.17V8.96h3.31l-.02 4.75c0 .09.08.17.17.17h2.13c.09 0 .17-.08.17-.17V2.6c0-.09-.08-.17-.17-.17zM8.81 7.35v5.74c0 .04-.01.11-.06.13 0 0-1.25.89-3.31.89-2.49 0-5.44-.78-5.44-5.92S2.58 1.99 5.1 2c2.18 0 3.06.49 3.2.58.04.05.06.09.06.14L7.94 4.5c0 .09-.09.2-.2.17-.36-.11-.9-.33-2.17-.33-1.47 0-3.05.42-3.05 3.73s1.5 3.7 2.58 3.7c.92 0 1.25-.11 1.25-.11v-2.3H4.88c-.11 0-.19-.08-.19-.17V7.35c0-.09.08-.17.19-.17h3.74c.11 0 .19.08.19.17z"></path></svg></div></a></template></dom-module><style>
             body {
                 background-color: #eaeaea;
                 font-family: 'Arial', sans-serif;
@@ -2135,7 +2163,7 @@
                 display: grid;
                 grid-gap: 10px;
                 /*grid-template-columns: 500px;*/
-                grid-template-columns: repeat(auto-fill, minmax(200px, 550px));
+                grid-template-columns: repeat(auto-fit, minmax(200px, 550px));
                 justify-content: center;
             }
             .left-panel {
@@ -2186,11 +2214,13 @@
                 font-size: 30px;
                 margin-bottom: 15px;
             }
-            .step:not(:first-of-type) {
+            /* .step:not(:first-of-type) { */
+            /*     margin-bottom: 20px; */
+            /* } */
+            .step {
                 margin-bottom: 20px;
             }
             .step-text {
                 font-size: 20px;
             }
-        </style></div><div align=right id=sha>4d5e296</div><div align=right>6/14/2017, 6:26:17 PM</div><div class=wrapper><div class=left-panel><div class=logo-wrapper><img src=images/ordersplitter-logo.png alt="Order Splitter"><h1>Order Splitter</h1><span class=version>0.6.0</span></div><order-input></order-input></div><div class=right-panel><div class=step><h1>How it Works</h1><span class=number><h3>1</h3></span> <span class=step-text>Copy order details from OrderUp</span></div><div><pre>                        <example-order></example-order>
-                    </pre></div><div class=step><span class=number><h3>2</h3></span> <span class=step-text>Enter taxes, fees, and tip</span></div><div class=step><span class=number><h3>3</h3></span> <span class=step-text>Split order</span></div></div></div><p id=result></p><order-split-results-table></order-split-results-table><script src=index.js></script></body></html>
+        </style></div><div align=right id=sha>b1090d9</div><div align=right>7/25/2017, 10:19:39 PM</div><order-split-results-table id=table></order-split-results-table><div class=wrapper><div class=left-panel><div class=logo-wrapper><img src=images/ordersplitter-logo.png alt="Order Splitter"><h1>Order Splitter</h1><span class=version>0.7.0</span></div><order-input></order-input></div><div class=right-panel><div class=step><h1>How it Works</h1><span class=number><h3>1</h3></span> <span class=step-text>Copy OrderUp summary page (⌘-A ⌘-C)</span></div><div class=step><span class=number><h3>2</h3></span> <span class=step-text>Paste here</span></div><div class=step><span class=number><h3>3</h3></span> <span class=step-text>Share the results</span></div></div></div><center><github-link></github-link></center><script src=index.js></script></body></html>
