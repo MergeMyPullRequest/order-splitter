@@ -115,9 +115,11 @@
                     return Array.from(this.order.people.entries()).map(([name, price]) => ({ name, price }));
                 }
                 _computeFeesPerPerson(order, name) {
+                    if (!order) return;
                     return this._prettifyNumber(order.feesPerPerson[name]);
                 }
                 _computeFeesPerPersonTooltip(order, name) {
+                    if (!order) return;
                     return `${order.untaxedFees} x ${order.people.get(name)} / ${order.subTotal}`;
                 }
                 _computePersonTotal(name) {
