@@ -64,6 +64,7 @@
                     <td>
                         +
                         <span class="chip">$[[_prettifyNumber(order.tax)]] tax</span>
+                        <paper-tooltip>[[_divide(order.tax, order.subTotal)]]%</paper-tooltip>
                     </td>
                     <td>
                         +
@@ -72,6 +73,7 @@
                     <td>
                         +
                         <span class="chip">$[[_prettifyNumber(order.tipDollars)]] tip</span>
+                        <paper-tooltip>[[_divide(order.tip, order.subTotal)]]%</paper-tooltip>
                     </td>
                     <td>
                         =
@@ -150,6 +152,9 @@
                  */
                 _prettifyNumber(n) {
                     return Utils._prettifyNumber(n);
+                }
+                _divide(dividend, divisor) {
+                    return dividend/divisor;
                 }
                 /**
                  * Returns a listing of names to split costs
