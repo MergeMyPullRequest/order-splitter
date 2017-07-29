@@ -110,7 +110,7 @@
                     let query = 'tax=' + order.tax + '&fee=' + order.fee + '&tip=' + order.tipDollars;
 
                     for (var [person, val] of order.people) {
-                        query += '&' + encodeURIComponent(person) + '=' + Utils._prettifyNumber(val);
+                        query += '&' + encodeURIComponent(person) + '=' + Utils._formatUSD(val).slice(1);
                     }
                     this.$.location.query = query;
                 }
