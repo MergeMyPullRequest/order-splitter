@@ -44,7 +44,7 @@
                         </td>
                         <td>
                             +
-                            <span class="chip">$[[_prettifyNumber(order.feesPerPerson)]] fee <paper-tooltip>[[order.feesPerPerson]]</paper-tooltip></span>
+                            <span class="chip">$[[_computeFeesPerPerson(order, item.name)]] fee <paper-tooltip>[[_computeFeesPerPersonTooltip(order, item.name)]]</paper-tooltip></span>
                         </td>
                         <td>
                             +
@@ -107,12 +107,13 @@
                     if (!people) {
                         return [];
                     }
-                    return Array.from(this.order.people.entries()).map(entry => {
-                        return {
-                            name: entry[0],
-                            price: entry[1]
-                        };
-                    });
+                    return Array.from(this.order.people.entries()).map(([name, price]) => ({ name, price }));
+                }
+                _computeFeesPerPerson(order, name) {
+                    return this._prettifyNumber(order.feesPerPerson[name]);
+                }
+                _computeFeesPerPersonTooltip(order, name) {
+                    return `${order.untaxedFees} x ${order.people.get(name)} / ${order.subTotal}`;
                 }
                 _computePersonTotal(name) {
                     return this._prettifyNumber(this.order.totals.get(name));
@@ -179,26 +180,6 @@
                     }
 
                     return output + '\n' + this._makeUrl(this.order);
-                }
-                /**
-                 * Returns a display breaking down the Order split calculations
-                 * @param {Order} order - the Order to breakdown
-                 * @returns {string} A view of the Order breakdown
-                 */
-                _makeBreakdownDisplay(order) {
-                    var breakdown = '<table id="breakdown">';
-                    breakdown += '<tr><th>Person</th><th>Item Costs</th><th>Tax</th><th>Tip</th><th>Fees Per Person</th><th>Person Total</th></tr>';
-                    for (var [person, price] of order.people) {
-                        breakdown += '<tr><td>' + person + '</td><td>' +
-                            price + '</td><td> + ' + // item costs
-                            price + ' * ' + order.taxPercent + '</td><td> + ' + // taxes
-                            price + ' * ' + order.tipPercent + '</td><td> + ' + // tip
-                            order.feesPerPerson + '</td><td> = ' +
-                            this._prettifyNumber(order.totals.get(person)) + '</td></tr>';
-                    }
-
-                    breakdown += '</table>';
-                    return breakdown;
                 }
                 _makeUrl(order) {
                     if (!this.order) {
