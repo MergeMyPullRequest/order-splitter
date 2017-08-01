@@ -7,6 +7,9 @@
         <style>
             :host {
                 @apply(--paper-font-common-base);
+                --paper-tooltip: {
+                    font-size: 12px;
+                }
             }
             span.chip {
                 @apply(--paper-font-common-base);
@@ -36,46 +39,48 @@
                     <tr>
                         <td>[[item.name]]</td>
                         <td>
-                            <span class="chip">$[[item.price]] price</span>
+                            <span class="chip">[[_formatUSD(item.price)]] price</span>
                         </td>
                         <td>
                             +
-                            <span class="chip">$[[_multiply(item.price, order.taxPercent)]] tax <paper-tooltip>[[item.price]] x [[order.taxPercent]]</paper-tooltip></span>
+                            <span class="chip">[[_multiplyUSD(item.price, order.taxPercent)]] tax <paper-tooltip>[[item.price]] x [[order.taxPercent]]</paper-tooltip></span>
                         </td>
                         <td>
                             +
-                            <span class="chip">$[[_computeFeesPerPerson(order, item.name)]] fee <paper-tooltip>[[_computeFeesPerPersonTooltip(order, item.name)]]</paper-tooltip></span>
+                            <span class="chip">[[_computeFeesPerPersonUSD(order, item.name)]] fee <paper-tooltip>[[_computeFeesPerPersonTooltip(order, item.name)]]</paper-tooltip></span>
                         </td>
                         <td>
                             +
-                            <span class="chip">$[[_multiply(item.price, order.tipPercent)]] tip <paper-tooltip>[[item.price]] x [[order.tipPercent]]</paper-tooltip></span>
+                            <span class="chip">[[_multiplyUSD(item.price, order.tipPercent)]] tip <paper-tooltip>[[item.price]] x [[order.tipPercent]]</paper-tooltip></span>
                         </td>
                         <td>
                             =
-                            <span class="chip">$[[_computePersonTotal(item.name)]]</span>
+                            <span class="chip">[[_computePersonTotalUSD(item.name)]]</span>
                         </td>
                     </tr>
                 </template>
                 <tr class="totals-row">
                     <td>Everyone</td>
                     <td>
-                        <span class="chip">$[[_prettifyNumber(order.subTotal)]] subtotal<paper-tooltip>sum of item costs</paper-tooltip></span>
+                        <span class="chip">[[_formatUSD(order.subTotal)]] subtotal</span>
                     </td>
                     <td>
                         +
-                        <span class="chip">$[[_prettifyNumber(order.tax)]] tax</span>
+                        <span class="chip">[[_formatUSD(order.tax)]] tax</span>
+                        <paper-tooltip>[[_divide(order.tax, order.subTotal)]]%</paper-tooltip>
                     </td>
                     <td>
                         +
-                        <span class="chip">$[[_prettifyNumber(order.fee)]] fee</span>
+                        <span class="chip">[[_formatUSD(order.fee)]] fee</span>
                     </td>
                     <td>
                         +
-                        <span class="chip">$[[_prettifyNumber(order.tipDollars)]] tip</span>
+                        <span class="chip">[[_formatUSD(order.tipDollars)]] tip</span>
+                        <paper-tooltip>[[_divide(order.tip, order.subTotal)]]%</paper-tooltip>
                     </td>
                     <td>
                         =
-                        <span class="chip">$[[_prettifyNumber(order.total)]] total<paper-tooltip>subtotal + tax + fees + tip</paper-tooltip></span>
+                        <span class="chip">[[_formatUSD(order.total)]] total<paper-tooltip>subtotal + tax + fees + tip</paper-tooltip></span>
                     </td>
                 </tr>
             </table>
@@ -109,17 +114,19 @@
                     }
                     return Array.from(this.order.people.entries()).map(([name, price]) => ({ name, price }));
                 }
-                _computeFeesPerPerson(order, name) {
-                    return this._prettifyNumber(order.feesPerPerson[name]);
+                _computeFeesPerPersonUSD(order, name) {
+                    if (!order) return;
+                    return this._formatUSD(order.feesPerPerson[name]);
                 }
                 _computeFeesPerPersonTooltip(order, name) {
+                    if (!order) return;
                     return `${order.untaxedFees} x ${order.people.get(name)} / ${order.subTotal}`;
                 }
-                _computePersonTotal(name) {
-                    return this._prettifyNumber(this.order.totals.get(name));
+                _computePersonTotalUSD(name) {
+                    return this._formatUSD(this.order.totals.get(name));
                 }
-                _multiply(a, b) {
-                    return this._prettifyNumber(a * b);
+                _multiplyUSD(a, b) {
+                    return this._formatUSD(a * b);
                 }
                 constructor() {
                     super();
@@ -141,15 +148,11 @@
                     }
                     this.hidden = !order;
                 }
-                /**
-                 * Returns a string of a number in the format "#.##"
-                 * @example
-                 * _prettifyNumber(12); // returns "12.00"
-                 * @param {number} n - The number to prettify
-                 * @returns {string} A string of a number rounded and padded to 2 decimal places
-                 */
-                _prettifyNumber(n) {
-                    return Utils._prettifyNumber(n);
+                _formatUSD(n) {
+                    return Utils._formatUSD(n);
+                }
+                _divide(dividend, divisor) {
+                    return dividend/divisor;
                 }
                 /**
                  * Returns a listing of names to split costs
@@ -176,7 +179,7 @@
                         for (var i = person.length; i < longestName; i++) {
                             name += ' ';
                         }
-                        output += name + '$' + this._prettifyNumber(price) + '\n';
+                        output += name + '$' + this._formatUSD(price) + '\n';
                     }
 
                     return output + '\n' + this._makeUrl(this.order);

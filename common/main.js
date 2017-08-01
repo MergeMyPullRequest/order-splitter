@@ -5,20 +5,14 @@ function defineCustomElement(tag, elementClass) {
 }
 
 var Utils = {
-    _prettifyNumber(n) {
-        n = Math.round(n * 100) / 100; // round to 2 decimal places
-
-        // pad to 2 decimal places if necessary
-        var s = n.toString();
-
-        if (s.indexOf('.') === -1) {
-            s += '.';
+    /**
+     * @param {number} number to be formatted
+     * @return {string} undefined if param is not a number
+     */
+    _formatUSD(number) {
+        if (typeof number !== 'number') {
+            return;
         }
-
-        while (s.length < s.indexOf('.') + 3) {
-            s += '0';
-        }
-
-        return s;
+        return number.toLocaleString('en', {style: 'currency', currency: 'USD', useGrouping: true});
     }
 };
