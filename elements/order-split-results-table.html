@@ -179,7 +179,7 @@
                         for (var i = person.length; i < longestName; i++) {
                             name += ' ';
                         }
-                        output += name + '$' + this._formatUSD(price) + '\n';
+                        output += name + this._formatUSD(price) + '\n';
                     }
 
                     return output + '\n' + this._makeUrl(this.order);
