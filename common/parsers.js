@@ -22,7 +22,7 @@
                         lastItemCost = Number(price.match('\\$([0-9.]+)')[1]);
                     }
 
-                    if (center_td && (name = center_td.querySelector('li strong'))) {
+                    if (center_td && (name = center_td.querySelector('li:last-child strong'))) {
                         highlight(name);
                         name = name.innerText;
                         people[name] = people[name] || 0;
