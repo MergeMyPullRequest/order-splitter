@@ -172,15 +172,16 @@
                     // add 1 to longest name for a space after name
                     longestName += 1;
 
-                    var output = '';
                     var name;
+                    var output = '```\n';
                     for (let [person, price] of totals) {
                         let name = person;
                         for (var i = person.length; i < longestName; i++) {
                             name += ' ';
                         }
-                        output += name + '$' + this._formatUSD(price) + '\n';
+                        output += name + this._formatUSD(price) + '\n';
                     }
+                    output += '```\n';
 
                     return output + '\n' + this._makeUrl(this.order);
                 }
