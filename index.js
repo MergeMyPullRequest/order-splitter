@@ -6,6 +6,10 @@ class Order {
     }
     constructor(config = {tip: 0, tax: 0, untaxedFees: 0, taxedFees: 0, isTipPercentage: false, people: {}}) {
 
+        if (config.taxedFees) {
+            console.warn('Taxed fees have not been tested and probably don\'t work. I was contemplating removing this feature.');
+        }
+
         // validation
         {
             var defaults = {
@@ -126,7 +130,12 @@ class Order {
     }
 
     get feesPerPerson() {
-        return this.fee/this.people.size;
+        if (!this.hasPeople) return {};
+        var subtotal = Array.from(this.people.values()).reduce((a,b)=>a+b);
+        return Array.from(this.people.entries()).reduce((feesPerPerson, [name, price]) => {
+            feesPerPerson[name] = price/subtotal*this.untaxedFees;
+            return feesPerPerson;
+        }, {});
     }
 
     get total() {
@@ -151,7 +160,7 @@ class Order {
             let totalForPerson = price;
             totalForPerson += price * this.taxPercent;
             totalForPerson += price * this.tipPercent;
-            totalForPerson += this.feesPerPerson;
+            totalForPerson += this.feesPerPerson[name];
             this.totals.set(name, totalForPerson);
         }
         let totalPrice = Array.from(this.totals.values()).reduce((acc, val) => acc+val);
@@ -186,8 +195,8 @@ class Order {
 }
 module.exports = Order;
 
-}).call(this,require("+xKvab"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../common/order.js","/../common")
-},{"+xKvab":5,"buffer":4}],2:[function(require,module,exports){
+}).call(this,require("pBGvAp"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../common/order.js","/../common")
+},{"buffer":4,"pBGvAp":6}],2:[function(require,module,exports){
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 (function() {
     const Order = require('./order.js');
@@ -213,7 +222,7 @@ module.exports = Order;
                         lastItemCost = Number(price.match('\\$([0-9.]+)')[1]);
                     }
 
-                    if (center_td && (name = center_td.querySelector('li strong'))) {
+                    if (center_td && (name = center_td.querySelector('li:last-child strong'))) {
                         highlight(name);
                         name = name.innerText;
                         people[name] = people[name] || 0;
@@ -364,8 +373,8 @@ module.exports = Order;
     module.exports = {OrderUpParser, QueryStringParser, CsvParser, OrderUpHtmlParser};
 })();
 
-}).call(this,require("+xKvab"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../common/parsers.js","/../common")
-},{"+xKvab":5,"./order.js":1,"buffer":4}],3:[function(require,module,exports){
+}).call(this,require("pBGvAp"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../common/parsers.js","/../common")
+},{"./order.js":1,"buffer":4,"pBGvAp":6}],3:[function(require,module,exports){
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
@@ -492,8 +501,8 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 	exports.fromByteArray = uint8ToBase64
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
-}).call(this,require("+xKvab"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../node_modules/browserify/node_modules/base64-js/lib/b64.js","/../node_modules/browserify/node_modules/base64-js/lib")
-},{"+xKvab":5,"buffer":4}],4:[function(require,module,exports){
+}).call(this,require("pBGvAp"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../node_modules/base64-js/lib/b64.js","/../node_modules/base64-js/lib")
+},{"buffer":4,"pBGvAp":6}],4:[function(require,module,exports){
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 /*!
  * The buffer module from node.js, for the browser.
@@ -1605,75 +1614,8 @@ function assert (test, message) {
   if (!test) throw new Error(message || 'Failed assertion')
 }
 
-}).call(this,require("+xKvab"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../node_modules/browserify/node_modules/buffer/index.js","/../node_modules/browserify/node_modules/buffer")
-},{"+xKvab":5,"base64-js":3,"buffer":4,"ieee754":6}],5:[function(require,module,exports){
-(function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
-// shim for using process in browser
-
-var process = module.exports = {};
-
-process.nextTick = (function () {
-    var canSetImmediate = typeof window !== 'undefined'
-    && window.setImmediate;
-    var canPost = typeof window !== 'undefined'
-    && window.postMessage && window.addEventListener
-    ;
-
-    if (canSetImmediate) {
-        return function (f) { return window.setImmediate(f) };
-    }
-
-    if (canPost) {
-        var queue = [];
-        window.addEventListener('message', function (ev) {
-            var source = ev.source;
-            if ((source === window || source === null) && ev.data === 'process-tick') {
-                ev.stopPropagation();
-                if (queue.length > 0) {
-                    var fn = queue.shift();
-                    fn();
-                }
-            }
-        }, true);
-
-        return function nextTick(fn) {
-            queue.push(fn);
-            window.postMessage('process-tick', '*');
-        };
-    }
-
-    return function nextTick(fn) {
-        setTimeout(fn, 0);
-    };
-})();
-
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-
-function noop() {}
-
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-}
-
-// TODO(shtylman)
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-
-}).call(this,require("+xKvab"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../node_modules/browserify/node_modules/process/browser.js","/../node_modules/browserify/node_modules/process")
-},{"+xKvab":5,"buffer":4}],6:[function(require,module,exports){
+}).call(this,require("pBGvAp"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../node_modules/buffer/index.js","/../node_modules/buffer")
+},{"base64-js":3,"buffer":4,"ieee754":5,"pBGvAp":6}],5:[function(require,module,exports){
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
@@ -1760,12 +1702,80 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-}).call(this,require("+xKvab"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../node_modules/ieee754/index.js","/../node_modules/ieee754")
-},{"+xKvab":5,"buffer":4}],7:[function(require,module,exports){
+}).call(this,require("pBGvAp"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../node_modules/ieee754/index.js","/../node_modules/ieee754")
+},{"buffer":4,"pBGvAp":6}],6:[function(require,module,exports){
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
-'use strict';var _slicedToArray=function(){function sliceIterator(arr,i){var _arr=[];var _n=true;var _d=false;var _e=undefined;try{for(var _i=arr[Symbol.iterator](),_s;!(_n=(_s=_i.next()).done);_n=true){_arr.push(_s.value);if(i&&_arr.length===i)break;}}catch(err){_d=true;_e=err;}finally{try{if(!_n&&_i["return"])_i["return"]();}finally{if(_d)throw _e;}}return _arr;}return function(arr,i){if(Array.isArray(arr)){return arr;}else if(Symbol.iterator in Object(arr)){return sliceIterator(arr,i);}else{throw new TypeError("Invalid attempt to destructure non-iterable instance");}};}();var _get=function get(object,property,receiver){if(object===null)object=Function.prototype;var desc=Object.getOwnPropertyDescriptor(object,property);if(desc===undefined){var parent=Object.getPrototypeOf(object);if(parent===null){return undefined;}else{return get(parent,property,receiver);}}else if("value"in desc){return desc.value;}else{var getter=desc.get;if(getter===undefined){return undefined;}return getter.call(receiver);}};var _typeof=typeof Symbol==="function"&&typeof Symbol.iterator==="symbol"?function(obj){return typeof obj;}:function(obj){return obj&&typeof Symbol==="function"&&obj.constructor===Symbol&&obj!==Symbol.prototype?"symbol":typeof obj;};var _createClass=function(){function defineProperties(target,props){for(var i=0;i<props.length;i++){var descriptor=props[i];descriptor.enumerable=descriptor.enumerable||false;descriptor.configurable=true;if("value"in descriptor)descriptor.writable=true;Object.defineProperty(target,descriptor.key,descriptor);}}return function(Constructor,protoProps,staticProps){if(protoProps)defineProperties(Constructor.prototype,protoProps);if(staticProps)defineProperties(Constructor,staticProps);return Constructor;};}();function _toConsumableArray(arr){if(Array.isArray(arr)){for(var i=0,arr2=Array(arr.length);i<arr.length;i++){arr2[i]=arr[i];}return arr2;}else{return Array.from(arr);}}function _classCallCheck(instance,Constructor){if(!(instance instanceof Constructor)){throw new TypeError("Cannot call a class as a function");}}function _possibleConstructorReturn(self,call){if(!self){throw new ReferenceError("this hasn't been initialised - super() hasn't been called");}return call&&(typeof call==="object"||typeof call==="function")?call:self;}function _inherits(subClass,superClass){if(typeof superClass!=="function"&&superClass!==null){throw new TypeError("Super expression must either be null or a function, not "+typeof superClass);}subClass.prototype=Object.create(superClass&&superClass.prototype,{constructor:{value:subClass,enumerable:false,writable:true,configurable:true}});if(superClass)Object.setPrototypeOf?Object.setPrototypeOf(subClass,superClass):subClass.__proto__=superClass;}if('customElements'in window){document.getElementById('webcomponent-polyfill').remove();}else{console.warn("polyfilling window.customElements");};function defineCustomElement(tag,elementClass){customElements.define(tag,function(_elementClass){_inherits(_class,_elementClass);function _class(){_classCallCheck(this,_class);return _possibleConstructorReturn(this,(_class.__proto__||Object.getPrototypeOf(_class)).apply(this,arguments));}_createClass(_class,null,[{key:'is',get:function get(){return tag;}}]);return _class;}(elementClass));}var Utils={_prettifyNumber:function _prettifyNumber(n){n=Math.round(n*100)/100;// round to 2 decimal places
-// pad to 2 decimal places if necessary
-var s=n.toString();if(s.indexOf('.')===-1){s+='.';}while(s.length<s.indexOf('.')+3){s+='0';}return s;}};(function(){console.debug('service worker is disabled for now.');navigator.serviceWorker.getRegistrations().then(function(registrations){var _iteratorNormalCompletion=true;var _didIteratorError=false;var _iteratorError=undefined;try{for(var _iterator=registrations[Symbol.iterator](),_step;!(_iteratorNormalCompletion=(_step=_iterator.next()).done);_iteratorNormalCompletion=true){var registration=_step.value;console.log('uninstalling old service worker');registration.unregister();}}catch(err){_didIteratorError=true;_iteratorError=err;}finally{try{if(!_iteratorNormalCompletion&&_iterator.return){_iterator.return();}}finally{if(_didIteratorError){throw _iteratorError;}}}});return;// no service worker until we iron bugs out of caching
+// shim for using process in browser
+
+var process = module.exports = {};
+
+process.nextTick = (function () {
+    var canSetImmediate = typeof window !== 'undefined'
+    && window.setImmediate;
+    var canPost = typeof window !== 'undefined'
+    && window.postMessage && window.addEventListener
+    ;
+
+    if (canSetImmediate) {
+        return function (f) { return window.setImmediate(f) };
+    }
+
+    if (canPost) {
+        var queue = [];
+        window.addEventListener('message', function (ev) {
+            var source = ev.source;
+            if ((source === window || source === null) && ev.data === 'process-tick') {
+                ev.stopPropagation();
+                if (queue.length > 0) {
+                    var fn = queue.shift();
+                    fn();
+                }
+            }
+        }, true);
+
+        return function nextTick(fn) {
+            queue.push(fn);
+            window.postMessage('process-tick', '*');
+        };
+    }
+
+    return function nextTick(fn) {
+        setTimeout(fn, 0);
+    };
+})();
+
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+}
+
+// TODO(shtylman)
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+
+}).call(this,require("pBGvAp"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../node_modules/process/browser.js","/../node_modules/process")
+},{"buffer":4,"pBGvAp":6}],7:[function(require,module,exports){
+(function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
+'use strict';var _slicedToArray=function(){function sliceIterator(arr,i){var _arr=[];var _n=true;var _d=false;var _e=undefined;try{for(var _i=arr[Symbol.iterator](),_s;!(_n=(_s=_i.next()).done);_n=true){_arr.push(_s.value);if(i&&_arr.length===i)break;}}catch(err){_d=true;_e=err;}finally{try{if(!_n&&_i["return"])_i["return"]();}finally{if(_d)throw _e;}}return _arr;}return function(arr,i){if(Array.isArray(arr)){return arr;}else if(Symbol.iterator in Object(arr)){return sliceIterator(arr,i);}else{throw new TypeError("Invalid attempt to destructure non-iterable instance");}};}();var _get=function get(object,property,receiver){if(object===null)object=Function.prototype;var desc=Object.getOwnPropertyDescriptor(object,property);if(desc===undefined){var parent=Object.getPrototypeOf(object);if(parent===null){return undefined;}else{return get(parent,property,receiver);}}else if("value"in desc){return desc.value;}else{var getter=desc.get;if(getter===undefined){return undefined;}return getter.call(receiver);}};var _typeof=typeof Symbol==="function"&&typeof Symbol.iterator==="symbol"?function(obj){return typeof obj;}:function(obj){return obj&&typeof Symbol==="function"&&obj.constructor===Symbol&&obj!==Symbol.prototype?"symbol":typeof obj;};var _createClass=function(){function defineProperties(target,props){for(var i=0;i<props.length;i++){var descriptor=props[i];descriptor.enumerable=descriptor.enumerable||false;descriptor.configurable=true;if("value"in descriptor)descriptor.writable=true;Object.defineProperty(target,descriptor.key,descriptor);}}return function(Constructor,protoProps,staticProps){if(protoProps)defineProperties(Constructor.prototype,protoProps);if(staticProps)defineProperties(Constructor,staticProps);return Constructor;};}();function _toConsumableArray(arr){if(Array.isArray(arr)){for(var i=0,arr2=Array(arr.length);i<arr.length;i++){arr2[i]=arr[i];}return arr2;}else{return Array.from(arr);}}function _classCallCheck(instance,Constructor){if(!(instance instanceof Constructor)){throw new TypeError("Cannot call a class as a function");}}function _possibleConstructorReturn(self,call){if(!self){throw new ReferenceError("this hasn't been initialised - super() hasn't been called");}return call&&(typeof call==="object"||typeof call==="function")?call:self;}function _inherits(subClass,superClass){if(typeof superClass!=="function"&&superClass!==null){throw new TypeError("Super expression must either be null or a function, not "+typeof superClass);}subClass.prototype=Object.create(superClass&&superClass.prototype,{constructor:{value:subClass,enumerable:false,writable:true,configurable:true}});if(superClass)Object.setPrototypeOf?Object.setPrototypeOf(subClass,superClass):subClass.__proto__=superClass;}if('customElements'in window){document.getElementById('webcomponent-polyfill').remove();}else{console.warn("polyfilling window.customElements");};function defineCustomElement(tag,elementClass){customElements.define(tag,function(_elementClass){_inherits(_class,_elementClass);function _class(){_classCallCheck(this,_class);return _possibleConstructorReturn(this,(_class.__proto__||Object.getPrototypeOf(_class)).apply(this,arguments));}_createClass(_class,null,[{key:'is',get:function get(){return tag;}}]);return _class;}(elementClass));}var Utils={/**
+     * @param {number} number to be formatted
+     * @return {string} undefined if param is not a number
+     */_formatUSD:function _formatUSD(number){if(typeof number!=='number'){return;}return number.toLocaleString('en',{style:'currency',currency:'USD',useGrouping:true});}};(function(){console.debug('service worker is disabled for now.');navigator.serviceWorker.getRegistrations().then(function(registrations){var _iteratorNormalCompletion=true;var _didIteratorError=false;var _iteratorError=undefined;try{for(var _iterator=registrations[Symbol.iterator](),_step;!(_iteratorNormalCompletion=(_step=_iterator.next()).done);_iteratorNormalCompletion=true){var registration=_step.value;console.log('uninstalling old service worker');registration.unregister();}}catch(err){_didIteratorError=true;_iteratorError=err;}finally{try{if(!_iteratorNormalCompletion&&_iterator.return){_iterator.return();}}finally{if(_didIteratorError){throw _iteratorError;}}}});return;// no service worker until we iron bugs out of caching
 var queryParams=new Map(location.search.slice(1).split('&').map(function(t){return t.split('=');}));if(location.hostname==='localhost'&&queryParams.get('sw')!=='test'){console.log('service worker disabled on localhost');return;}if(!('serviceWorker'in navigator)){console.log('service worker not supported');return;}navigator.serviceWorker.register('./sw.js').then(function(registration){// Registration was successful 😊
 console.log('ServiceWorker registration successful with scope: ',registration.scope);}).catch(function(err){// registration failed :(
 console.log('ServiceWorker registration failed: ',err);});})();(function(){'use strict';var userPolymer=window.Polymer;/**
@@ -7609,7 +7619,7 @@ var fullNormalizedHref=resolveURL(normalizedHref,window.location.href).href;retu
 // _onCheckboxTap() {
 //     localStorage.setItem('usePercentForTip', JSON.stringify(!this.usePercentForTip));
 // }
-},{key:'_changeUrl',value:function _changeUrl(order){if(!order||!order.hasPeople){this.$.location.query='';return;}var query='tax='+order.tax+'&fee='+order.fee+'&tip='+order.tipDollars;var _iteratorNormalCompletion2=true;var _didIteratorError2=false;var _iteratorError2=undefined;try{for(var _iterator2=order.people[Symbol.iterator](),_step2;!(_iteratorNormalCompletion2=(_step2=_iterator2.next()).done);_iteratorNormalCompletion2=true){var _step2$value=_slicedToArray(_step2.value,2),person=_step2$value[0],val=_step2$value[1];query+='&'+encodeURIComponent(person)+'='+Utils._prettifyNumber(val);}}catch(err){_didIteratorError2=true;_iteratorError2=err;}finally{try{if(!_iteratorNormalCompletion2&&_iterator2.return){_iterator2.return();}}finally{if(_didIteratorError2){throw _iteratorError2;}}}this.$.location.query=query;}}]);return _class3;}(Polymer.Element));})();/**
+},{key:'_changeUrl',value:function _changeUrl(order){if(!order||!order.hasPeople){this.$.location.query='';return;}var query='tax='+order.tax+'&fee='+order.fee+'&tip='+order.tipDollars;var _iteratorNormalCompletion2=true;var _didIteratorError2=false;var _iteratorError2=undefined;try{for(var _iterator2=order.people[Symbol.iterator](),_step2;!(_iteratorNormalCompletion2=(_step2=_iterator2.next()).done);_iteratorNormalCompletion2=true){var _step2$value=_slicedToArray(_step2.value,2),person=_step2$value[0],val=_step2$value[1];query+='&'+encodeURIComponent(person)+'='+Utils._formatUSD(val).slice(1);}}catch(err){_didIteratorError2=true;_iteratorError2=err;}finally{try{if(!_iteratorNormalCompletion2&&_iterator2.return){_iterator2.return();}}finally{if(_didIteratorError2){throw _iteratorError2;}}}this.$.location.query=query;}}]);return _class3;}(Polymer.Element));})();/**
    * `Polymer.NeonAnimatableBehavior` is implemented by elements containing animations for use with
    * elements implementing `Polymer.NeonAnimationRunnerBehavior`.
    * @polymerBehavior
@@ -7702,26 +7712,13 @@ if(this._animationPlaying){this.cancelAnimation();this._showing=false;this._onAn
 if(this.marginTop!=14&&this.offset==14)offset=this.marginTop;var parentRect=this.offsetParent.getBoundingClientRect();var targetRect=this._target.getBoundingClientRect();var thisRect=this.getBoundingClientRect();var horizontalCenterOffset=(targetRect.width-thisRect.width)/2;var verticalCenterOffset=(targetRect.height-thisRect.height)/2;var targetLeft=targetRect.left-parentRect.left;var targetTop=targetRect.top-parentRect.top;var tooltipLeft,tooltipTop;switch(this.position){case'top':tooltipLeft=targetLeft+horizontalCenterOffset;tooltipTop=targetTop-thisRect.height-offset;break;case'bottom':tooltipLeft=targetLeft+horizontalCenterOffset;tooltipTop=targetTop+targetRect.height+offset;break;case'left':tooltipLeft=targetLeft-thisRect.width-offset;tooltipTop=targetTop+verticalCenterOffset;break;case'right':tooltipLeft=targetLeft+targetRect.width+offset;tooltipTop=targetTop+verticalCenterOffset;break;}// TODO(noms): This should use IronFitBehavior if possible.
 if(this.fitToVisibleBounds){// Clip the left/right side
 if(parentRect.left+tooltipLeft+thisRect.width>window.innerWidth){this.style.right='0px';this.style.left='auto';}else{this.style.left=Math.max(0,tooltipLeft)+'px';this.style.right='auto';}// Clip the top/bottom side.
-if(parentRect.top+tooltipTop+thisRect.height>window.innerHeight){this.style.bottom=parentRect.height+'px';this.style.top='auto';}else{this.style.top=Math.max(-parentRect.top,tooltipTop)+'px';this.style.bottom='auto';}}else{this.style.left=tooltipLeft+'px';this.style.top=tooltipTop+'px';}},_addListeners:function _addListeners(){if(this._target){this.listen(this._target,'mouseenter','show');this.listen(this._target,'focus','show');this.listen(this._target,'mouseleave','hide');this.listen(this._target,'blur','hide');this.listen(this._target,'tap','hide');}this.listen(this,'mouseenter','hide');},_findTarget:function _findTarget(){if(!this.manualMode)this._removeListeners();this._target=this.target;if(!this.manualMode)this._addListeners();},_manualModeChanged:function _manualModeChanged(){if(this.manualMode)this._removeListeners();else this._addListeners();},_onAnimationFinish:function _onAnimationFinish(){this._animationPlaying=false;if(!this._showing){this.toggleClass('hidden',true,this.$.tooltip);}},_removeListeners:function _removeListeners(){if(this._target){this.unlisten(this._target,'mouseenter','show');this.unlisten(this._target,'focus','show');this.unlisten(this._target,'mouseleave','hide');this.unlisten(this._target,'blur','hide');this.unlisten(this._target,'tap','hide');}this.unlisten(this,'mouseenter','hide');}});(function(){var parsers=require('../common/parsers.js');var Order=require('../common/order.js');var QueryStringParserLocal=parsers.QueryStringParser;defineCustomElement('order-split-results-table',function(_Polymer$Element4){_inherits(_class4,_Polymer$Element4);_createClass(_class4,[{key:'_onClipboardTap',value:function _onClipboardTap(){this.$.textForClipboard.hidden=false;this.$.textForClipboard.select();var successful=document.execCommand('copy');if(!successful){console.error('clipboard copy failed');}else{this.$.textForClipboard.hidden=true;}}},{key:'_computeBreakdownItems',value:function _computeBreakdownItems(people){if(!people){return[];}return Array.from(this.order.people.entries()).map(function(entry){return{name:entry[0],price:entry[1]};});}},{key:'_computePersonTotal',value:function _computePersonTotal(name){return this._prettifyNumber(this.order.totals.get(name));}},{key:'_multiply',value:function _multiply(a,b){return this._prettifyNumber(a*b);}}]);function _class4(){_classCallCheck(this,_class4);var _this40=_possibleConstructorReturn(this,(_class4.__proto__||Object.getPrototypeOf(_class4)).call(this));_this40.hidden=true;return _this40;}_createClass(_class4,[{key:'_onOrderChanged',value:function _onOrderChanged(order){console.log(order);if(order&&order.constructor!==Order){throw new Error('order must be of type Order');}this.hidden=!order;}/**
-                 * Returns a string of a number in the format "#.##"
-                 * @example
-                 * _prettifyNumber(12); // returns "12.00"
-                 * @param {number} n - The number to prettify
-                 * @returns {string} A string of a number rounded and padded to 2 decimal places
-                 */},{key:'_prettifyNumber',value:function _prettifyNumber(n){return Utils._prettifyNumber(n);}/**
+if(parentRect.top+tooltipTop+thisRect.height>window.innerHeight){this.style.bottom=parentRect.height+'px';this.style.top='auto';}else{this.style.top=Math.max(-parentRect.top,tooltipTop)+'px';this.style.bottom='auto';}}else{this.style.left=tooltipLeft+'px';this.style.top=tooltipTop+'px';}},_addListeners:function _addListeners(){if(this._target){this.listen(this._target,'mouseenter','show');this.listen(this._target,'focus','show');this.listen(this._target,'mouseleave','hide');this.listen(this._target,'blur','hide');this.listen(this._target,'tap','hide');}this.listen(this,'mouseenter','hide');},_findTarget:function _findTarget(){if(!this.manualMode)this._removeListeners();this._target=this.target;if(!this.manualMode)this._addListeners();},_manualModeChanged:function _manualModeChanged(){if(this.manualMode)this._removeListeners();else this._addListeners();},_onAnimationFinish:function _onAnimationFinish(){this._animationPlaying=false;if(!this._showing){this.toggleClass('hidden',true,this.$.tooltip);}},_removeListeners:function _removeListeners(){if(this._target){this.unlisten(this._target,'mouseenter','show');this.unlisten(this._target,'focus','show');this.unlisten(this._target,'mouseleave','hide');this.unlisten(this._target,'blur','hide');this.unlisten(this._target,'tap','hide');}this.unlisten(this,'mouseenter','hide');}});(function(){var parsers=require('../common/parsers.js');var Order=require('../common/order.js');var QueryStringParserLocal=parsers.QueryStringParser;defineCustomElement('order-split-results-table',function(_Polymer$Element4){_inherits(_class4,_Polymer$Element4);_createClass(_class4,[{key:'_onClipboardTap',value:function _onClipboardTap(){this.$.textForClipboard.hidden=false;this.$.textForClipboard.select();var successful=document.execCommand('copy');if(!successful){console.error('clipboard copy failed');}else{this.$.textForClipboard.hidden=true;}}},{key:'_computeBreakdownItems',value:function _computeBreakdownItems(people){if(!people){return[];}return Array.from(this.order.people.entries()).map(function(_ref2){var _ref3=_slicedToArray(_ref2,2),name=_ref3[0],price=_ref3[1];return{name:name,price:price};});}},{key:'_computeFeesPerPersonUSD',value:function _computeFeesPerPersonUSD(order,name){if(!order)return;return this._formatUSD(order.feesPerPerson[name]);}},{key:'_computeFeesPerPersonTooltip',value:function _computeFeesPerPersonTooltip(order,name){if(!order)return;return order.untaxedFees+' x '+order.people.get(name)+' / '+order.subTotal;}},{key:'_computePersonTotalUSD',value:function _computePersonTotalUSD(name){return this._formatUSD(this.order.totals.get(name));}},{key:'_multiplyUSD',value:function _multiplyUSD(a,b){return this._formatUSD(a*b);}}]);function _class4(){_classCallCheck(this,_class4);var _this40=_possibleConstructorReturn(this,(_class4.__proto__||Object.getPrototypeOf(_class4)).call(this));_this40.hidden=true;return _this40;}_createClass(_class4,[{key:'_onOrderChanged',value:function _onOrderChanged(order){console.log(order);if(order&&order.constructor!==Order){throw new Error('order must be of type Order');}this.hidden=!order;}},{key:'_formatUSD',value:function _formatUSD(n){return Utils._formatUSD(n);}},{key:'_divide',value:function _divide(dividend,divisor){return dividend/divisor;}/**
                  * Returns a listing of names to split costs
                  * @param {object} totals - The totals property from the Order
                  * @returns {string} A view mapping names to split costs
                  */},{key:'_makeTextForClipboard',value:function _makeTextForClipboard(totals){if(!this.order){return;}// get length of longest name
 var longestName=-1;var _iteratorNormalCompletion3=true;var _didIteratorError3=false;var _iteratorError3=undefined;try{for(var _iterator3=totals[Symbol.iterator](),_step3;!(_iteratorNormalCompletion3=(_step3=_iterator3.next()).done);_iteratorNormalCompletion3=true){var _step3$value=_slicedToArray(_step3.value,2),person=_step3$value[0],price=_step3$value[1];longestName=Math.max(person.length,longestName);}// add 1 to longest name for a space after name
-}catch(err){_didIteratorError3=true;_iteratorError3=err;}finally{try{if(!_iteratorNormalCompletion3&&_iterator3.return){_iterator3.return();}}finally{if(_didIteratorError3){throw _iteratorError3;}}}longestName+=1;var output='';var name;var _iteratorNormalCompletion4=true;var _didIteratorError4=false;var _iteratorError4=undefined;try{for(var _iterator4=totals[Symbol.iterator](),_step4;!(_iteratorNormalCompletion4=(_step4=_iterator4.next()).done);_iteratorNormalCompletion4=true){var _step4$value=_slicedToArray(_step4.value,2),_person=_step4$value[0],_price=_step4$value[1];var _name=_person;for(var i=_person.length;i<longestName;i++){_name+=' ';}output+=_name+'$'+this._prettifyNumber(_price)+'\n';}}catch(err){_didIteratorError4=true;_iteratorError4=err;}finally{try{if(!_iteratorNormalCompletion4&&_iterator4.return){_iterator4.return();}}finally{if(_didIteratorError4){throw _iteratorError4;}}}return output+'\n'+this._makeUrl(this.order);}/**
-                 * Returns a display breaking down the Order split calculations
-                 * @param {Order} order - the Order to breakdown
-                 * @returns {string} A view of the Order breakdown
-                 */},{key:'_makeBreakdownDisplay',value:function _makeBreakdownDisplay(order){var breakdown='<table id="breakdown">';breakdown+='<tr><th>Person</th><th>Item Costs</th><th>Tax</th><th>Tip</th><th>Fees Per Person</th><th>Person Total</th></tr>';var _iteratorNormalCompletion5=true;var _didIteratorError5=false;var _iteratorError5=undefined;try{for(var _iterator5=order.people[Symbol.iterator](),_step5;!(_iteratorNormalCompletion5=(_step5=_iterator5.next()).done);_iteratorNormalCompletion5=true){var _step5$value=_slicedToArray(_step5.value,2),person=_step5$value[0],price=_step5$value[1];breakdown+='<tr><td>'+person+'</td><td>'+price+'</td><td> + '+// item costs
-price+' * '+order.taxPercent+'</td><td> + '+// taxes
-price+' * '+order.tipPercent+'</td><td> + '+// tip
-order.feesPerPerson+'</td><td> = '+this._prettifyNumber(order.totals.get(person))+'</td></tr>';}}catch(err){_didIteratorError5=true;_iteratorError5=err;}finally{try{if(!_iteratorNormalCompletion5&&_iterator5.return){_iterator5.return();}}finally{if(_didIteratorError5){throw _iteratorError5;}}}breakdown+='</table>';return breakdown;}},{key:'_makeUrl',value:function _makeUrl(order){if(!this.order){return;}var params={};params.tax=order.tax;params.fee=order.fee;params.tip=order.tipDollars;var paramString=[].concat(_toConsumableArray(Object.entries(params)),_toConsumableArray(order.people.entries())).map(function(_ref2){var _ref3=_slicedToArray(_ref2,2),key=_ref3[0],value=_ref3[1];return key+'='+value;}).join('&');return location.href.split('?')[0]+'?'+paramString;}},{key:'_handleQueryStringChanged',value:function _handleQueryStringChanged(e,_ref4){var value=_ref4.value;this.order=new QueryStringParserLocal().parse();}}],[{key:'properties',get:function get(){return{order:{type:Object,observer:'_onOrderChanged'}};}}]);return _class4;}(Polymer.Element));})();defineCustomElement('github-link',function(_Polymer$Element5){_inherits(_class5,_Polymer$Element5);function _class5(){_classCallCheck(this,_class5);return _possibleConstructorReturn(this,(_class5.__proto__||Object.getPrototypeOf(_class5)).apply(this,arguments));}return _class5;}(Polymer.Element));// this is to help with debugging any SW caching issues if they appear
-var scriptSha='b1090d9';var htmlSha=document.querySelector('#sha').innerText;console.debug('script version: '+scriptSha);console.debug('html version:   '+htmlSha);if(scriptSha!==htmlSha){alert('Whoops. The cached files on your machine are out of sync with each other. That\'s our bad. Please hard-refresh the page?');};
-}).call(this,require("+xKvab"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/fake_1678f699.js","/")
-},{"+xKvab":5,"../common/order.js":1,"../common/parsers.js":2,"buffer":4}]},{},[7])
+}catch(err){_didIteratorError3=true;_iteratorError3=err;}finally{try{if(!_iteratorNormalCompletion3&&_iterator3.return){_iterator3.return();}}finally{if(_didIteratorError3){throw _iteratorError3;}}}longestName+=1;var name;var output='```\n';var _iteratorNormalCompletion4=true;var _didIteratorError4=false;var _iteratorError4=undefined;try{for(var _iterator4=totals[Symbol.iterator](),_step4;!(_iteratorNormalCompletion4=(_step4=_iterator4.next()).done);_iteratorNormalCompletion4=true){var _step4$value=_slicedToArray(_step4.value,2),_person=_step4$value[0],_price=_step4$value[1];var _name=_person;for(var i=_person.length;i<longestName;i++){_name+=' ';}output+=_name+this._formatUSD(_price)+'\n';}}catch(err){_didIteratorError4=true;_iteratorError4=err;}finally{try{if(!_iteratorNormalCompletion4&&_iterator4.return){_iterator4.return();}}finally{if(_didIteratorError4){throw _iteratorError4;}}}output+='```\n';return output+'\n'+this._makeUrl(this.order);}},{key:'_makeUrl',value:function _makeUrl(order){if(!this.order){return;}var params={};params.tax=order.tax;params.fee=order.fee;params.tip=order.tipDollars;var paramString=[].concat(_toConsumableArray(Object.entries(params)),_toConsumableArray(order.people.entries())).map(function(_ref4){var _ref5=_slicedToArray(_ref4,2),key=_ref5[0],value=_ref5[1];return key+'='+value;}).join('&');return location.href.split('?')[0]+'?'+paramString;}},{key:'_handleQueryStringChanged',value:function _handleQueryStringChanged(e,_ref6){var value=_ref6.value;this.order=new QueryStringParserLocal().parse();}}],[{key:'properties',get:function get(){return{order:{type:Object,observer:'_onOrderChanged'}};}}]);return _class4;}(Polymer.Element));})();defineCustomElement('github-link',function(_Polymer$Element5){_inherits(_class5,_Polymer$Element5);function _class5(){_classCallCheck(this,_class5);return _possibleConstructorReturn(this,(_class5.__proto__||Object.getPrototypeOf(_class5)).apply(this,arguments));}return _class5;}(Polymer.Element));// this is to help with debugging any SW caching issues if they appear
+var scriptSha='a680fe7';var htmlSha=document.querySelector('#sha').innerText;console.debug('script version: '+scriptSha);console.debug('html version:   '+htmlSha);if(scriptSha!==htmlSha){alert('Whoops. The cached files on your machine are out of sync with each other. That\'s our bad. Please hard-refresh the page?');};
+}).call(this,require("pBGvAp"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/fake_51d3420.js","/")
+},{"../common/order.js":1,"../common/parsers.js":2,"buffer":4,"pBGvAp":6}]},{},[7])
