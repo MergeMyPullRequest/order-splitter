@@ -105,14 +105,15 @@
 
         /**
          * Parses the confirmation summary from an OrderUp.com order
-         * @param {string} orderUpText - The confirmation summary from OrderUp.com
+         * @param {Element} elementOrText - The element containing the confirmation summary from OrderUp.com, or the text itself
          * @param {number} fee
          * @param {number} tax
          * @param {number} tip - The tip (either a fixed value or percentage)
          * @param {boolean} isTipPercentage - True if the tip is a percentage as opposed to a fixed value
          * @return {Order} An order parsed from the OrderUp.com confirmation summary
          */
-        parse(orderUpText, fee=0, tax=0, tip=0, isTipPercentage=false) {
+        parse(elementOrText, fee=0, tax=0, tip=0, isTipPercentage=false) {
+            let orderUpText = elementOrText.innerText || elementOrText;
             let order = new Order()
                 .withNonTaxedFees(fee)
                 .withTax(tax)
@@ -144,7 +145,8 @@
     }
 
     class CsvParser {
-        parse(csv) {
+        parse(elementOrText) {
+            const csv = elementOrText.innerText || elementOrText;
             const order = new Order();
 
             const lines = csv.split('\n');

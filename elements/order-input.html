@@ -67,9 +67,22 @@
                         if (header) header.hidden = true;
                     }
 
-                    var order = new parsers.OrderUpHtmlParser().parse(this.$.input);
-                    console.log('order', order);
-                    this._changeUrl(order);
+                    const parsersToTry = [parsers.OrderUpHtmlParser, parsers.OrderUpParser, parsers.CsvParser];
+                    const order = parsersToTry.reduce((acc, parser) => {
+                        if (acc && acc.people && acc.people.size > 0 && acc.total) {
+                            return acc;
+                        }
+                        try {
+                            return new parser().parse(this.$.input).split();
+                        } catch (e) {
+                            return false;
+                        }
+                    });
+                    if (order && order.people && order.people.size > 0 && order.total) {
+                        debugger;
+                        console.log('order', order);
+                        this._changeUrl(order);
+                    }
                 }
                 ready() {
                     super.ready();
