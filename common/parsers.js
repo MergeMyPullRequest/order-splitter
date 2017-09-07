@@ -152,7 +152,10 @@
                 .filter(line => !!line)
                 .reduce((orderParams, line) => {
                     let [name, ...priceStrings] = line.split(',');
-                    let price = priceStrings.map(priceStr => parseFloat(priceStr.replace('$',''))).filter(price => !isNaN(price)).reduce((price,sum) => price+sum, 0);
+                    let price = priceStrings
+                        .map(priceStr => parseFloat(priceStr.replace('$','')))
+                        .filter(price => !isNaN(price))
+                        .reduce((price,sum) => price+sum, 0);
 
                     if (!price) {
                         // ignore names with price of $0
