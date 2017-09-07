@@ -182,7 +182,7 @@
         CsvParser,
         OrderUpHtmlParser,
         getUserInputParsers() {
-            return [CsvParser, OrderUpHtmlParser];
+            return [OrderUpHtmlParser, CsvParser];
         }
     };
 })();
