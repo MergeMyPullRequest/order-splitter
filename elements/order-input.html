@@ -67,19 +67,18 @@
                         if (header) header.hidden = true;
                     }
 
-                    const order = parsers.getUserInputParsers().reduce((acc, parser) => {
-                        if (acc && acc.hasPeople) {
-                            return acc;
+                    const order = parsers.getUserInputParsers().reduce((order, parser) => {
+                        if (order && order.hasPeople) {
+                            return order;
                         }
                         try {
                             return new parser().parse(this.$.input).split();
                         } catch (e) {
+                            console.error('Developer Error!', e);
                             return false;
                         }
-                    });
-                    if (order && order.people && order.people.size > 0 && order.total) {
-                        debugger;
-                        console.log('order', order);
+                    }, null);
+                    if (order && order.hasPeople) {
                         this._changeUrl(order);
                     }
                 }
