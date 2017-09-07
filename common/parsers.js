@@ -157,12 +157,15 @@
                         case 'fee':
                             orderParams.untaxedFees = orderParams.untaxedFees || 0;
                             orderParams.untaxedFees += price;
+                            break;
                         case 'tax':
                             orderParams.tax = orderParams.tax || 0;
                             orderParams.tax += price;
+                            break;
                         case 'tip':
                             orderParams.tip = orderParams.tip || 0;
                             orderParams.tip += price;
+                            break;
                         default:
                             orderParams.people[name] = orderParams.people[name] || 0;
                             orderParams.people[name] += price;
