@@ -45,8 +45,8 @@ class Order {
                 throw new Error(`Missing key ${key}`);
             });
             Object.values(config.people).forEach(personCost => {
-                if (typeof personCost !== 'number') {
-                    throw new Error('config.people\'s values must be numbers');
+                if (typeof personCost !== 'number' || isNaN(personCost)) {
+                    throw new Error('config.people\'s values must be valid numbers');
                 }
             });
         }
@@ -130,6 +130,10 @@ class Order {
     get feesPerPerson() {
         if (!this.hasPeople) return {};
         var subtotal = Array.from(this.people.values()).reduce((a,b)=>a+b);
+        if (subtotal == 0) {
+            // simply convert this.people from Map to standard js object
+            return Array.from(this.people).reduce((obj, [key, value]) => { obj[key] = value; return obj;}, {});
+        }
         return Array.from(this.people.entries()).reduce((feesPerPerson, [name, price]) => {
             feesPerPerson[name] = price/subtotal*this.untaxedFees;
             return feesPerPerson;
@@ -162,7 +166,7 @@ class Order {
             this.totals.set(name, totalForPerson);
         }
         let totalPrice = Array.from(this.totals.values()).reduce((acc, val) => acc+val);
-        if(Math.round(totalPrice*100) != Math.round(this.total*100)) {
+        if (totalPrice != 0 && Math.round(totalPrice*100) != Math.round(this.total*100)) {
             throw new Error('Everyone\'s share does not add up to total');
         }
         return this;

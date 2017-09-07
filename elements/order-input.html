@@ -67,9 +67,20 @@
                         if (header) header.hidden = true;
                     }
 
-                    var order = new parsers.OrderUpHtmlParser().parse(this.$.input);
-                    console.log('order', order);
-                    this._changeUrl(order);
+                    const order = parsers.getUserInputParsers().reduce((order, parser) => {
+                        if (order && order.hasPeople) {
+                            return order;
+                        }
+                        try {
+                            return new parser().parse(this.$.input).split();
+                        } catch (e) {
+                            console.error('Developer Error!', e);
+                            return false;
+                        }
+                    }, null);
+                    if (order && order.hasPeople) {
+                        this._changeUrl(order);
+                    }
                 }
                 ready() {
                     super.ready();
@@ -110,7 +121,9 @@
                     let query = 'tax=' + order.tax + '&fee=' + order.fee + '&tip=' + order.tipDollars;
 
                     for (var [person, val] of order.people) {
-                        query += '&' + encodeURIComponent(person) + '=' + Utils._formatUSD(val).slice(1);
+                        query += '&' + encodeURIComponent(person) + '=' + Utils._formatUSD(val)
+                            .slice(1)          // remove '$'
+                            .replace(/,/g,''); // remove commas in really big numbers (like that ever happens at lunch)
                     }
                     this.$.location.query = query;
                 }
