@@ -145,31 +145,31 @@
     }
 
     class CsvParser {
-        parse(elementOrText) {
-            const csv = elementOrText.innerText || elementOrText;
-            const order = new Order();
-
-            const lines = csv.split('\n');
-            for(let line of lines) {
-                if(line.trim() !== '') {
-                    const [name, ...priceStrings] = line.split(',');
-                    const price = priceStrings.map(ps => Number(ps.trim().replace('$',''))).reduce((p,acc) => p+acc, 0);
-                    if(name === 'fee') {
-                        order.withNonTaxedFees(price);
+        parse(element) {
+            let orderParams = element.innerText.split('\n')
+                .map(line => line.trim())
+                .filter(line => !!line)
+                .reduce((orderParams, line) => {
+                    let [name, ...priceStrings] = line.split(',');
+                    let price = priceStrings.map(priceStr => parseInt(priceStr)).reduce((price,sum) => price+sum, 0);
+                    switch (name) {
+                        case 'fee':
+                            orderParams.untaxedFees = orderParams.untaxedFees || 0;
+                            orderParams.untaxedFees += price;
+                        case 'tax':
+                            orderParams.tax = orderParams.tax || 0;
+                            orderParams.tax += price;
+                        case 'tip':
+                            orderParams.tip = orderParams.tip || 0;
+                            orderParams.tip += price;
+                        default:
+                            orderParams.people[name] = orderParams.people[name] || 0;
+                            orderParams.people[name] += price;
                     }
-                    else if(name === 'tax') {
-                        order.withTax(price);
-                    } 
-                    else if(name === 'tip') {
-                        order.withTip(price);
-                    } 
-                    else {
-                        order.withPerson(name, price);
-                    }
-                }
-            }
+                    return orderParams;
+                }, {people: {}});
 
-            return order;
+            return Order.split(orderParams);
         }
     }
     module.exports = {OrderUpParser, QueryStringParser, CsvParser, OrderUpHtmlParser};
