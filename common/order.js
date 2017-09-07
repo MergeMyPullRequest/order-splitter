@@ -130,6 +130,10 @@ class Order {
     get feesPerPerson() {
         if (!this.hasPeople) return {};
         var subtotal = Array.from(this.people.values()).reduce((a,b)=>a+b);
+        if (subtotal == 0) {
+            // simply convert this.people from Map to standard js object
+            return Array.from(this.people).reduce((obj, [key, value]) => { obj[key] = value; return obj;}, {});
+        }
         return Array.from(this.people.entries()).reduce((feesPerPerson, [name, price]) => {
             feesPerPerson[name] = price/subtotal*this.untaxedFees;
             return feesPerPerson;
