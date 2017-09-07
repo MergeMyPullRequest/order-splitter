@@ -121,7 +121,9 @@
                     let query = 'tax=' + order.tax + '&fee=' + order.fee + '&tip=' + order.tipDollars;
 
                     for (var [person, val] of order.people) {
-                        query += '&' + encodeURIComponent(person) + '=' + Utils._formatUSD(val).slice(1);
+                        query += '&' + encodeURIComponent(person) + '=' + Utils._formatUSD(val)
+                            .slice(1)          // remove '$'
+                            .replace(/,/g,''); // remove commas in really big numbers (like that ever happens at lunch)
                     }
                     this.$.location.query = query;
                 }
