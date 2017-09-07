@@ -153,6 +153,9 @@
                 .reduce((orderParams, line) => {
                     let [name, ...priceStrings] = line.split(',');
                     let price = priceStrings.map(priceStr => parseInt(priceStr)).reduce((price,sum) => price+sum, 0);
+                    if (isNaN(price)) {
+                        price = 0;
+                    }
                     switch (name) {
                         case 'fee':
                             orderParams.untaxedFees = orderParams.untaxedFees || 0;
