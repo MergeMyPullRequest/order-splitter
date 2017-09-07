@@ -63,6 +63,7 @@
     }
 
     class QueryStringParser {
+
         /**
          * Parses input from a URL query string into an Order.
          * @example
@@ -172,5 +173,13 @@
             return Order.split(orderParams);
         }
     }
-    module.exports = {OrderUpParser, QueryStringParser, CsvParser, OrderUpHtmlParser};
+    module.exports = {
+        OrderUpParser,
+        QueryStringParser,
+        CsvParser,
+        OrderUpHtmlParser,
+        getUserInputParsers() {
+            return [CsvParser, OrderUpHtmlParser];
+        }
+    };
 })();
