@@ -67,9 +67,8 @@
                         if (header) header.hidden = true;
                     }
 
-                    const parsersToTry = [parsers.OrderUpHtmlParser, parsers.OrderUpParser, parsers.CsvParser];
-                    const order = parsersToTry.reduce((acc, parser) => {
-                        if (acc && acc.people && acc.people.size > 0 && acc.total) {
+                    const order = parsers.getUserInputParsers().reduce((acc, parser) => {
+                        if (acc && acc.hasPeople) {
                             return acc;
                         }
                         try {
