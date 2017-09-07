@@ -166,7 +166,7 @@ class Order {
             this.totals.set(name, totalForPerson);
         }
         let totalPrice = Array.from(this.totals.values()).reduce((acc, val) => acc+val);
-        if(Math.round(totalPrice*100) != Math.round(this.total*100)) {
+        if (totalPrice != 0 && Math.round(totalPrice*100) != Math.round(this.total*100)) {
             throw new Error('Everyone\'s share does not add up to total');
         }
         return this;
