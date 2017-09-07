@@ -45,8 +45,8 @@ class Order {
                 throw new Error(`Missing key ${key}`);
             });
             Object.values(config.people).forEach(personCost => {
-                if (typeof personCost !== 'number') {
-                    throw new Error('config.people\'s values must be numbers');
+                if (typeof personCost !== 'number' || isNaN(personCost)) {
+                    throw new Error('config.people\'s values must be valid numbers');
                 }
             });
         }
