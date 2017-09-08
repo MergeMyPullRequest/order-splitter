@@ -1,10 +1,10 @@
-function defineCustomElement(tag, elementClass) {
+export function defineCustomElement(tag, elementClass) {
     customElements.define(tag, class extends elementClass {
         static get is() { return tag; }
     });
 }
 
-var Utils = {
+export var Utils = {
     /**
      * @param {number} number to be formatted
      * @return {string} undefined if param is not a number

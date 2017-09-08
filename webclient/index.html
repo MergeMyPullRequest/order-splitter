@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
     <head>
         <title>Order Splitter</title>
@@ -26,23 +27,27 @@
         <meta name="msapplication-TileColor" content="#3372DF">
         <!-- Tile icon for Win8 (144x144) -->
         <meta name="msapplication-TileImage" content="ordersplitter144.png" async>
-
-        <script>
-            if('customElements' in window) {
-                document.getElementById('webcomponent-polyfill').remove();
-            } else {
-                console.warn("polyfilling window.customElements");
-            }
-        </script>
-        <script src="./bower_components/webcomponentsjs/custom-elements-es5-adapter.js"></script>
         <script src="./bower_components/webcomponentsjs/webcomponents-lite.js" id="webcomponent-polyfill"></script>
 
-        <script src="../common/main.js"></script>
+        <script type="module" src="../common/main.js"></script>
         <script src="sw-install.js"></script>
         <link rel="manifest" href="manifest.json">
 
         <link rel="import" href="../elements/example-order.html">
         <link rel="import" href="../elements/order-input.html">
+        <script type="module">
+            import {test} from './test.js';
+test();
+        import '../elements/order-input.js';
+        import '../elements/order-split-results-table.js';
+</script>
+        <!--
+
+console.log("here");
+        </script>
+        <script type="module" src="../elements/order-input.js"></script>
+        <script type="module" src="../elements/order-split-results-table.js"></script>
+        -->
         <link rel="import" href="../elements/order-split-results-table.html">
         <link rel="import" href="../elements/github-link.html">
 

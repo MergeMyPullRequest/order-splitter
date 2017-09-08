@@ -16,7 +16,7 @@ for(let [parserName, orders] of dataMap) {
         orders.forEach(({input, expected}) => {
             let order;
             beforeEach(() => {
-                let inputText = input.text.reduce((acc, curr) => acc+'\n'+curr, "");
+                let inputText = input.text.reduce((acc, curr) => acc+'\n'+curr, '');
                 order = parser.parse(inputText);
                 if(input.tip) {
                     order.withTip(input.tip, false);
