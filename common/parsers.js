@@ -21,12 +21,15 @@ export class OrderUpHtmlParser {
                     lastItemCost = Number(price.match('\\$([0-9.]+)')[1]);
                 }
 
-                if (center_td && (name = center_td.querySelector('li:last-child strong'))) {
-                    highlight(name);
-                    name = name.innerText;
-                    people[name] = people[name] || 0;
-                    people[name] += lastItemCost;
-                    lastItemCost = null;
+                if (center_td) {
+                    var emTags = Array.from(center_td.querySelectorAll('em')).filter(em => em.innerHTML.includes('Label for'));
+                    if (name = emTags[0] && emTags[0].nextElementSibling) {
+                        highlight(name);
+                        name = name.innerText;
+                        people[name] = people[name] || 0;
+                        people[name] += lastItemCost;
+                        lastItemCost = null;
+                    }
                 }
 
                 return [people, lastItemCost];
