@@ -42,6 +42,11 @@ gulp.task('clean', function () {
         .pipe(clean());
 });
 
+gulp.task('clean', function () {
+    return gulp.src(deployDir)
+        .pipe(clean());
+});
+
 gulp.task('copy-files', function() {
     return merge(
         gulp.src([...orderData, ...dontVulcanizeTheseFiles], {base: './'})
