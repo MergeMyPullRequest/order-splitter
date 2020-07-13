@@ -1,5 +1,12 @@
-<dom-module id="github-link">
-    <template>
+import {PolymerElement, html} from "@polymer/polymer/polymer-element.js";
+
+export class GithubLink extends PolymerElement {
+    static get is() {
+        return "github-link";
+    }
+
+    static get template() {
+        return html`
         <style>
             #mainContainer {
                 padding: 5px;
@@ -25,9 +32,8 @@
                 </svg>
             </div>
         </a>
-    </tempalte>
-</dom-module>
-<script>
-    defineCustomElement('github-link', class extends Polymer.Element {
-    });
-</script>
+        `;
+    }
+}
+
+window.customElements.define(GithubLink.is, GithubLink);

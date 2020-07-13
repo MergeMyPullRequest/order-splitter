@@ -1,0 +1,27 @@
+{
+  "name": "Order Splitter",
+  "short_name": "OrderSplitter",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fff",
+  "description": "Group order splitter",
+  "icons": [{
+    "src": "ordersplitter16.png",
+    "sizes": "16x16"
+  }, {
+    "src": "ordersplitter32.png",
+    "sizes": "32x32"
+  }, {
+    "src": "ordersplitter128.png",
+    "sizes": "128x128"
+  }, {
+    "src": "ordersplitter144.png",
+    "sizes": "144x144"
+  }, {
+    "src": "ordersplitter192.png",
+    "sizes": "192x192"
+  }],
+  "related_applications": [{
+    "platform": "web"
+  }]
+}

@@ -1,4 +1,4 @@
-class Order {
+export class Order {
     static split(config) {
         return new Order(config).split();
     }
@@ -195,4 +195,3 @@ class Order {
         return order.split();
     }
 }
-module.exports = Order;
