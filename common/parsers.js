@@ -185,6 +185,34 @@ export class CsvParser {
     }
 }
 
+export class GrubHubParser {
+    parse(element) {
+        let order = new Order();
+
+        let people = Array.from(element.querySelectorAll('[data-testid="receipt-item"]'))
+        .map(parent => {
+            return [parent.querySelector("[at-special-instruction]").innerText.replace(/\"/g, '').split("For ")[1], parsePrice(parent.lastChild.firstChild.innerText.replace(/\"/g, ''))];
+        });
+
+        for(const person of people) {
+            order.withPerson(person[0], person[1]);
+        }
+
+        let receiptLineItems = new Map(Array.from(element.querySelectorAll('[at-receipt-line-item="true"]'))
+            .map(parent => [parent.firstChild.innerText.replace(/\"/g, ''), parsePrice(parent.lastChild.innerText.replace(/\"/g, ''))]));
+
+        order.withNonTaxedFees(-1* (receiptLineItems.get("Promo code:") || 0))
+        order.withTax(receiptLineItems.get("Sales tax:") || 0)
+        order.withTip(receiptLineItems.get("Tip:") || 0)
+
+        return order;
+    }
+}
+
+function parsePrice(price) {
+    return Number(price.split("$")[1]);
+}
+
 export function getUserInputParsers() {
-    return [OrderUpHtmlParser, CsvParser];
+    return [GrubHubParser, OrderUpHtmlParser, CsvParser];
 }
