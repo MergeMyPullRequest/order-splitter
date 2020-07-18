@@ -47,8 +47,8 @@ class Order {
                 throw new Error(`Missing key ${key}`);
             });
             Object.values(config.people).forEach(personCost => {
-                if (typeof personCost !== 'number') {
-                    throw new Error('config.people\'s values must be numbers');
+                if (typeof personCost !== 'number' || isNaN(personCost)) {
+                    throw new Error('config.people\'s values must be valid numbers');
                 }
             });
         }
@@ -68,25 +68,25 @@ class Order {
     }
 
     withNonTaxedFees(...fees) {
-        console.warn("withNonTaxedFees() is deprecated");
+        console.warn('withNonTaxedFees() is deprecated');
         this.untaxedFees = fees.reduce((acc, val) => acc+val);
         return this;
     }
 
     withTaxedFees(...fees) {
-        console.warn("withTaxedFees() is deprecated");
+        console.warn('withTaxedFees() is deprecated');
         this.taxedFees = fees.reduce((acc, val) => acc+val);
         return this;
     }
 
     withTax(tax) {
-        console.warn("withTax() is deprecated");
+        console.warn('withTax() is deprecated');
         this.tax = tax;
         return this;
     }
 
     withPerson(name, price) {
-        console.warn("withPerson() is deprecated");
+        console.warn('withPerson() is deprecated');
         let newPrice = price;
         if(this.people.has(name)) {
             newPrice += this.people.get(name);
@@ -132,6 +132,10 @@ class Order {
     get feesPerPerson() {
         if (!this.hasPeople) return {};
         var subtotal = Array.from(this.people.values()).reduce((a,b)=>a+b);
+        if (subtotal == 0) {
+            // simply convert this.people from Map to standard js object
+            return Array.from(this.people).reduce((obj, [key, value]) => { obj[key] = value; return obj;}, {});
+        }
         return Array.from(this.people.entries()).reduce((feesPerPerson, [name, price]) => {
             feesPerPerson[name] = price/subtotal*this.untaxedFees;
             return feesPerPerson;
@@ -164,7 +168,7 @@ class Order {
             this.totals.set(name, totalForPerson);
         }
         let totalPrice = Array.from(this.totals.values()).reduce((acc, val) => acc+val);
-        if(Math.round(totalPrice*100) != Math.round(this.total*100)) {
+        if (totalPrice != 0 && Math.round(totalPrice*100) != Math.round(this.total*100)) {
             throw new Error('Everyone\'s share does not add up to total');
         }
         return this;
@@ -195,8 +199,8 @@ class Order {
 }
 module.exports = Order;
 
-}).call(this,require("pBGvAp"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../common/order.js","/../common")
-},{"buffer":4,"pBGvAp":6}],2:[function(require,module,exports){
+}).call(this,require("+xKvab"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../common/order.js","/../common")
+},{"+xKvab":4,"buffer":5}],2:[function(require,module,exports){
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 (function() {
     const Order = require('./order.js');
@@ -222,12 +226,15 @@ module.exports = Order;
                         lastItemCost = Number(price.match('\\$([0-9.]+)')[1]);
                     }
 
-                    if (center_td && (name = center_td.querySelector('li:last-child strong'))) {
-                        highlight(name);
-                        name = name.innerText;
-                        people[name] = people[name] || 0;
-                        people[name] += lastItemCost;
-                        lastItemCost = null;
+                    if (center_td) {
+                        var emTags = Array.from(center_td.querySelectorAll('em')).filter(em => em.innerHTML.includes('Label for'));
+                        if (name = emTags[0] && emTags[0].nextElementSibling) {
+                            highlight(name);
+                            name = name.innerText;
+                            people[name] = people[name] || 0;
+                            people[name] += lastItemCost;
+                            lastItemCost = null;
+                        }
                     }
 
                     return [people, lastItemCost];
@@ -263,6 +270,7 @@ module.exports = Order;
     }
 
     class QueryStringParser {
+
         /**
          * Parses input from a URL query string into an Order.
          * @example
@@ -305,14 +313,15 @@ module.exports = Order;
 
         /**
          * Parses the confirmation summary from an OrderUp.com order
-         * @param {string} orderUpText - The confirmation summary from OrderUp.com
+         * @param {Element} elementOrText - The element containing the confirmation summary from OrderUp.com, or the text itself
          * @param {number} fee
          * @param {number} tax
          * @param {number} tip - The tip (either a fixed value or percentage)
          * @param {boolean} isTipPercentage - True if the tip is a percentage as opposed to a fixed value
          * @return {Order} An order parsed from the OrderUp.com confirmation summary
          */
-        parse(orderUpText, fee=0, tax=0, tip=0, isTipPercentage=false) {
+        parse(elementOrText, fee=0, tax=0, tip=0, isTipPercentage=false) {
+            let orderUpText = elementOrText.innerText || elementOrText;
             let order = new Order()
                 .withNonTaxedFees(fee)
                 .withTax(tax)
@@ -344,37 +353,58 @@ module.exports = Order;
     }
 
     class CsvParser {
-        parse(csv) {
-            const order = new Order();
+        parse(element) {
+            let orderParams = element.innerText.split('\n')
+                .map(line => line.trim())
+                .filter(line => !!line)
+                .reduce((orderParams, line) => {
+                    let [name, ...priceStrings] = line.split(',');
+                    let price = priceStrings
+                        .map(priceStr => parseFloat(priceStr.replace('$','')))
+                        .filter(price => !isNaN(price))
+                        .reduce((price,sum) => price+sum, 0);
 
-            const lines = csv.split('\n');
-            for(let line of lines) {
-                if(line.trim() !== '') {
-                    const [name, ...priceStrings] = line.split(',');
-                    const price = priceStrings.map(ps => Number(ps.trim().replace('$',''))).reduce((p,acc) => p+acc, 0);
-                    if(name === 'fee') {
-                        order.withNonTaxedFees(price);
+                    if (!price) {
+                        // ignore names with price of $0
+                        return orderParams;
                     }
-                    else if(name === 'tax') {
-                        order.withTax(price);
-                    } 
-                    else if(name === 'tip') {
-                        order.withTip(price);
-                    } 
-                    else {
-                        order.withPerson(name, price);
-                    }
-                }
-            }
 
-            return order;
+                    switch (name) {
+                        case 'fee':
+                            orderParams.untaxedFees = orderParams.untaxedFees || 0;
+                            orderParams.untaxedFees += price;
+                            break;
+                        case 'tax':
+                            orderParams.tax = orderParams.tax || 0;
+                            orderParams.tax += price;
+                            break;
+                        case 'tip':
+                            orderParams.tip = orderParams.tip || 0;
+                            orderParams.tip += price;
+                            break;
+                        default:
+                            orderParams.people[name] = orderParams.people[name] || 0;
+                            orderParams.people[name] += price;
+                    }
+                    return orderParams;
+                }, {people: {}});
+
+            return Order.split(orderParams);
         }
     }
-    module.exports = {OrderUpParser, QueryStringParser, CsvParser, OrderUpHtmlParser};
+    module.exports = {
+        OrderUpParser,
+        QueryStringParser,
+        CsvParser,
+        OrderUpHtmlParser,
+        getUserInputParsers() {
+            return [OrderUpHtmlParser, CsvParser];
+        }
+    };
 })();
 
-}).call(this,require("pBGvAp"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../common/parsers.js","/../common")
-},{"./order.js":1,"buffer":4,"pBGvAp":6}],3:[function(require,module,exports){
+}).call(this,require("+xKvab"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../common/parsers.js","/../common")
+},{"+xKvab":4,"./order.js":1,"buffer":5}],3:[function(require,module,exports){
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
@@ -501,8 +531,75 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 	exports.fromByteArray = uint8ToBase64
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
-}).call(this,require("pBGvAp"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../node_modules/base64-js/lib/b64.js","/../node_modules/base64-js/lib")
-},{"buffer":4,"pBGvAp":6}],4:[function(require,module,exports){
+}).call(this,require("+xKvab"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../node_modules/base64-js/lib/b64.js","/../node_modules/base64-js/lib")
+},{"+xKvab":4,"buffer":5}],4:[function(require,module,exports){
+(function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
+// shim for using process in browser
+
+var process = module.exports = {};
+
+process.nextTick = (function () {
+    var canSetImmediate = typeof window !== 'undefined'
+    && window.setImmediate;
+    var canPost = typeof window !== 'undefined'
+    && window.postMessage && window.addEventListener
+    ;
+
+    if (canSetImmediate) {
+        return function (f) { return window.setImmediate(f) };
+    }
+
+    if (canPost) {
+        var queue = [];
+        window.addEventListener('message', function (ev) {
+            var source = ev.source;
+            if ((source === window || source === null) && ev.data === 'process-tick') {
+                ev.stopPropagation();
+                if (queue.length > 0) {
+                    var fn = queue.shift();
+                    fn();
+                }
+            }
+        }, true);
+
+        return function nextTick(fn) {
+            queue.push(fn);
+            window.postMessage('process-tick', '*');
+        };
+    }
+
+    return function nextTick(fn) {
+        setTimeout(fn, 0);
+    };
+})();
+
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+}
+
+// TODO(shtylman)
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+
+}).call(this,require("+xKvab"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../node_modules/browserify/node_modules/process/browser.js","/../node_modules/browserify/node_modules/process")
+},{"+xKvab":4,"buffer":5}],5:[function(require,module,exports){
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 /*!
  * The buffer module from node.js, for the browser.
@@ -1614,8 +1711,8 @@ function assert (test, message) {
   if (!test) throw new Error(message || 'Failed assertion')
 }
 
-}).call(this,require("pBGvAp"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../node_modules/buffer/index.js","/../node_modules/buffer")
-},{"base64-js":3,"buffer":4,"ieee754":5,"pBGvAp":6}],5:[function(require,module,exports){
+}).call(this,require("+xKvab"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../node_modules/buffer/index.js","/../node_modules/buffer")
+},{"+xKvab":4,"base64-js":3,"buffer":5,"ieee754":6}],6:[function(require,module,exports){
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
@@ -1702,75 +1799,8 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-}).call(this,require("pBGvAp"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../node_modules/ieee754/index.js","/../node_modules/ieee754")
-},{"buffer":4,"pBGvAp":6}],6:[function(require,module,exports){
-(function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
-// shim for using process in browser
-
-var process = module.exports = {};
-
-process.nextTick = (function () {
-    var canSetImmediate = typeof window !== 'undefined'
-    && window.setImmediate;
-    var canPost = typeof window !== 'undefined'
-    && window.postMessage && window.addEventListener
-    ;
-
-    if (canSetImmediate) {
-        return function (f) { return window.setImmediate(f) };
-    }
-
-    if (canPost) {
-        var queue = [];
-        window.addEventListener('message', function (ev) {
-            var source = ev.source;
-            if ((source === window || source === null) && ev.data === 'process-tick') {
-                ev.stopPropagation();
-                if (queue.length > 0) {
-                    var fn = queue.shift();
-                    fn();
-                }
-            }
-        }, true);
-
-        return function nextTick(fn) {
-            queue.push(fn);
-            window.postMessage('process-tick', '*');
-        };
-    }
-
-    return function nextTick(fn) {
-        setTimeout(fn, 0);
-    };
-})();
-
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-
-function noop() {}
-
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-}
-
-// TODO(shtylman)
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-
-}).call(this,require("pBGvAp"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../node_modules/process/browser.js","/../node_modules/process")
-},{"buffer":4,"pBGvAp":6}],7:[function(require,module,exports){
+}).call(this,require("+xKvab"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../node_modules/ieee754/index.js","/../node_modules/ieee754")
+},{"+xKvab":4,"buffer":5}],7:[function(require,module,exports){
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 'use strict';var _slicedToArray=function(){function sliceIterator(arr,i){var _arr=[];var _n=true;var _d=false;var _e=undefined;try{for(var _i=arr[Symbol.iterator](),_s;!(_n=(_s=_i.next()).done);_n=true){_arr.push(_s.value);if(i&&_arr.length===i)break;}}catch(err){_d=true;_e=err;}finally{try{if(!_n&&_i["return"])_i["return"]();}finally{if(_d)throw _e;}}return _arr;}return function(arr,i){if(Array.isArray(arr)){return arr;}else if(Symbol.iterator in Object(arr)){return sliceIterator(arr,i);}else{throw new TypeError("Invalid attempt to destructure non-iterable instance");}};}();var _get=function get(object,property,receiver){if(object===null)object=Function.prototype;var desc=Object.getOwnPropertyDescriptor(object,property);if(desc===undefined){var parent=Object.getPrototypeOf(object);if(parent===null){return undefined;}else{return get(parent,property,receiver);}}else if("value"in desc){return desc.value;}else{var getter=desc.get;if(getter===undefined){return undefined;}return getter.call(receiver);}};var _typeof=typeof Symbol==="function"&&typeof Symbol.iterator==="symbol"?function(obj){return typeof obj;}:function(obj){return obj&&typeof Symbol==="function"&&obj.constructor===Symbol&&obj!==Symbol.prototype?"symbol":typeof obj;};var _createClass=function(){function defineProperties(target,props){for(var i=0;i<props.length;i++){var descriptor=props[i];descriptor.enumerable=descriptor.enumerable||false;descriptor.configurable=true;if("value"in descriptor)descriptor.writable=true;Object.defineProperty(target,descriptor.key,descriptor);}}return function(Constructor,protoProps,staticProps){if(protoProps)defineProperties(Constructor.prototype,protoProps);if(staticProps)defineProperties(Constructor,staticProps);return Constructor;};}();function _toConsumableArray(arr){if(Array.isArray(arr)){for(var i=0,arr2=Array(arr.length);i<arr.length;i++){arr2[i]=arr[i];}return arr2;}else{return Array.from(arr);}}function _classCallCheck(instance,Constructor){if(!(instance instanceof Constructor)){throw new TypeError("Cannot call a class as a function");}}function _possibleConstructorReturn(self,call){if(!self){throw new ReferenceError("this hasn't been initialised - super() hasn't been called");}return call&&(typeof call==="object"||typeof call==="function")?call:self;}function _inherits(subClass,superClass){if(typeof superClass!=="function"&&superClass!==null){throw new TypeError("Super expression must either be null or a function, not "+typeof superClass);}subClass.prototype=Object.create(superClass&&superClass.prototype,{constructor:{value:subClass,enumerable:false,writable:true,configurable:true}});if(superClass)Object.setPrototypeOf?Object.setPrototypeOf(subClass,superClass):subClass.__proto__=superClass;}if('customElements'in window){document.getElementById('webcomponent-polyfill').remove();}else{console.warn("polyfilling window.customElements");};function defineCustomElement(tag,elementClass){customElements.define(tag,function(_elementClass){_inherits(_class,_elementClass);function _class(){_classCallCheck(this,_class);return _possibleConstructorReturn(this,(_class.__proto__||Object.getPrototypeOf(_class)).apply(this,arguments));}_createClass(_class,null,[{key:'is',get:function get(){return tag;}}]);return _class;}(elementClass));}var Utils={/**
      * @param {number} number to be formatted
@@ -1797,7 +1827,7 @@ if(userPolymer){Object.assign(Polymer,userPolymer);}// To be plugged by legacy i
    * the element prototype. The `properties`, `observers`, `hostAttributes`,
    * and `listeners` properties are processed to create element features.
    */window.Polymer._polymerFn=function(info){// eslint-disable-line no-unused-vars
-throw new Error('Load polymer.html to use the Polymer() function.');};window.Polymer.version='2.0.1';/* eslint-disable no-unused-vars *//*
+throw new Error('Load polymer.html to use the Polymer() function.');};window.Polymer.version='2.0.0';/* eslint-disable no-unused-vars *//*
   When using Closure Compiler, JSCompiler_renameProperty(property, object) is replaced by the munged name for object[property]
   We cannot alias this function, so we have to use a small shim that has the same behavior when not compiling.
   */window.JSCompiler_renameProperty=function(prop,obj){return prop;};/* eslint-enable */})();(function(){'use strict';// unique global id for deduping mixins.
@@ -2276,7 +2306,7 @@ if(!model.__dataProto){model.__dataProto={};}else if(!model.hasOwnProperty(JSCom
        * to initializing the property accessor system.
        *
        * @protected
-       */},{key:'_initializeProperties',value:function _initializeProperties(){this.__serializing=false;this.__dataCounter=0;this.__dataEnabled=false;this.__dataReady=false;this.__dataInvalid=false;// initialize data with prototype values saved when creating accessors
+       */},{key:'_initializeProperties',value:function _initializeProperties(){this.__serializing=false;this.__dataCounter=0;this.__dataEnabled=false;this.__dataInitialized=false;this.__dataInvalid=false;// initialize data with prototype values saved when creating accessors
 this.__data={};this.__dataPending=null;this.__dataOld=null;if(this.__dataProto){this._initializeProtoProperties(this.__dataProto);this.__dataProto=null;}// Capture instance properties; these will be set into accessors
 // during first flush. Don't set them here, since we want
 // these to overwrite defaults/constructor assignments
@@ -2418,7 +2448,7 @@ if(!(property in this.__dataOld)){this.__dataOld[property]=old;}this.__data[prop
        * `_propertiesChanged` callback.
        *
        * @protected
-       */},{key:'_invalidateProperties',value:function _invalidateProperties(){var _this4=this;if(!this.__dataInvalid&&this.__dataReady){this.__dataInvalid=true;microtask.run(function(){if(_this4.__dataInvalid){_this4.__dataInvalid=false;_this4._flushProperties();}});}}/**
+       */},{key:'_invalidateProperties',value:function _invalidateProperties(){var _this4=this;if(!this.__dataInvalid&&this.__dataInitialized){this.__dataInvalid=true;microtask.run(function(){if(_this4.__dataInvalid){_this4.__dataInvalid=false;_this4._flushProperties();}});}}/**
        * Call to enable property accessor processing. Before this method is
        * called accessor values will be set but side effects are
        * queued. When called, any pending side effects occur immediately.
@@ -2446,7 +2476,7 @@ if(!(property in this.__dataOld)){this.__dataOld[property]=old;}this.__data[prop
        * becomes enabled.
        *
        * @public
-       */},{key:'ready',value:function ready(){this.__dataReady=true;// Run normal flush
+       */},{key:'ready',value:function ready(){this.__dataInitialized=true;// Run normal flush
 this._flushProperties();}/**
        * Callback called when any properties with accessors created via
        * `_createPropertyAccessor` have been set.
@@ -2940,7 +2970,7 @@ var index=templateInfo.nodeInfoList.length;for(var i=0;i<binding.parts.length;i+
    * Implements the "binding" (property/path binding) effect.
    *
    * Note that binding syntax is overridable via `_parseBindings` and
-   * `_evaluateBinding`.  This method will call `_evaluateBinding` for any
+   * `_evaluateBindings`.  This method will call `_evaluateBinding` for any
    * non-literal parts returned from `_parseBindings`.  However,
    * there is no support for _path_ bindings via custom binding parts,
    * as this is specific to Polymer's path binding syntax.
@@ -3197,7 +3227,7 @@ inst.__data[splicesPath]={indexSplices:null};}/**
        * additional property-effect related properties.
        *
        * @override
-       */value:function _initializeProperties(){_get(PropertyEffects.prototype.__proto__||Object.getPrototypeOf(PropertyEffects.prototype),'_initializeProperties',this).call(this);hostStack.registerHost(this);this.__dataClientsReady=false;this.__dataPendingClients=null;this.__dataToNotify=null;this.__dataLinkedPaths=null;this.__dataHasPaths=false;// May be set on instance prior to upgrade
+       */value:function _initializeProperties(){_get(PropertyEffects.prototype.__proto__||Object.getPrototypeOf(PropertyEffects.prototype),'_initializeProperties',this).call(this);hostStack.registerHost(this);this.__dataClientsInitialized=false;this.__dataPendingClients=null;this.__dataToNotify=null;this.__dataLinkedPaths=null;this.__dataHasPaths=false;// May be set on instance prior to upgrade
 this.__dataCompoundStorage=this.__dataCompoundStorage||null;this.__dataHost=this.__dataHost||null;this.__dataTemp={};}/**
        * Overrides `Polymer.PropertyAccessors` implementation to provide a
        * more efficient implementation of initializing properties from
@@ -3363,12 +3393,12 @@ if(isPath||this.__notifyEffects&&this.__notifyEffects[property]){this.__dataToNo
        * @override
        */},{key:'_setProperty',value:function _setProperty(property,value){if(this._setPendingProperty(property,value,true)){this._invalidateProperties();}}/**
        * Overrides `PropertyAccessor`'s default async queuing of
-       * `_propertiesChanged`: if `__dataReady` is false (has not yet been
+       * `_propertiesChanged`: if `__dataInitialized` is false (has not yet been
        * manually flushed), the function no-ops; otherwise flushes
        * `_propertiesChanged` synchronously.
        *
        * @override
-       */},{key:'_invalidateProperties',value:function _invalidateProperties(){if(this.__dataReady){this._flushProperties();}}/**
+       */},{key:'_invalidateProperties',value:function _invalidateProperties(){if(this.__dataInitialized){this._flushProperties();}}/**
        * Enqueues the given client on a list of pending clients, whose
        * pending property changes can later be flushed via a call to
        * `_flushClients`.
@@ -3380,28 +3410,17 @@ if(isPath||this.__notifyEffects&&this.__notifyEffects[property]){this.__dataToNo
        * their `_flushProperties` method to run.
        *
        * @protected
-       */},{key:'_flushClients',value:function _flushClients(){if(!this.__dataClientsReady){this.__dataClientsReady=true;this._readyClients();// Override point where accessors are turned on; importantly,
+       */},{key:'_flushClients',value:function _flushClients(){if(!this.__dataClientsInitialized){this.__dataClientsInitialized=true;this._readyClients();// Override point where accessors are turned on; importantly,
 // this is after clients have fully readied, providing a guarantee
 // that any property effects occur only after all clients are ready.
-this.__dataReady=true;}else{this.__enableOrFlushClients();}}// NOTE: We ensure clients either enable or flush as appropriate. This
-// handles two corner cases:
-// (1) clients flush properly when connected/enabled before the host
-// enables; e.g.
-//   (a) Templatize stamps with no properties and does not flush and
-//   (b) the instance is inserted into dom and
-//   (c) then the instance flushes.
-// (2) clients enable properly when not connected/enabled when the host
-// flushes; e.g.
-//   (a) a template is runtime stamped and not yet connected/enabled
-//   (b) a host sets a property, causing stamped dom to flush
-//   (c) the stamped dom enables.
-},{key:'__enableOrFlushClients',value:function __enableOrFlushClients(){var clients=this.__dataPendingClients;if(clients){this.__dataPendingClients=null;for(var i=0;i<clients.length;i++){var client=clients[i];if(!client.__dataEnabled){client._enableProperties();}else if(client.__dataPending){client._flushProperties();}}}}/**
+this.__dataInitialized=true;}else{// Flush all clients
+var clients=this.__dataPendingClients;if(clients){this.__dataPendingClients=null;for(var i=0;i<clients.length;i++){var client=clients[i];if(client.__dataPending){client._flushProperties();}}}}}/**
        * Perform any initial setup on client dom. Called before the first
        * `_flushProperties` call on client dom and before any element
        * observers are called.
        *
        * @protected
-       */},{key:'_readyClients',value:function _readyClients(){this.__enableOrFlushClients();}/**
+       */},{key:'_readyClients',value:function _readyClients(){var clients=this.__dataPendingClients;if(clients){this.__dataPendingClients=null;for(var i=0;i<clients.length;i++){var client=clients[i];if(!client.__dataEnabled){client._enableProperties();}}}}/**
        * Sets a bag of property changes to this instance, and
        * synchronously processes all effects of the properties as a batch.
        *
@@ -3431,7 +3450,7 @@ this._setPendingPropertyOrPath(path,props[path],true);}}this._invalidateProperti
 // before processing any accessors side effects.
 this._flushProperties();// If no data was pending, `_flushProperties` will not `flushClients`
 // so ensure this is done.
-if(!this.__dataClientsReady){this._flushClients();}// Before ready, client notifications do not trigger _flushProperties.
+if(!this.__dataClientsInitialized){this._flushClients();}// Before ready, client notifications do not trigger _flushProperties.
 // Therefore a flush is necessary here if data has been set.
 if(this.__dataPending){this._flushProperties();}}/**
        * Implements `PropertyAccessors`'s properties changed callback.
@@ -3773,7 +3792,7 @@ hostStack.beginHosting(this);var dom=_get(PropertyEffects.prototype.__proto__||O
 templateInfo.nodeList=dom.nodeList;// Capture child nodes to allow unstamping of non-prototypical templates
 if(!templateInfo.wasPreBound){var nodes=templateInfo.childNodes=[];for(var n=dom.firstChild;n;n=n.nextSibling){nodes.push(n);}}dom.templateInfo=templateInfo;// Setup compound storage, 2-way listeners, and dataHost for bindings
 setupBindings(this,templateInfo);// Flush properties into template nodes if already booted
-if(this.__dataReady){runEffects(this,templateInfo.propertyEffects,this.__data,null,false,templateInfo.nodeList);}return dom;}/**
+if(this.__dataInitialized){runEffects(this,templateInfo.propertyEffects,this.__data,null,false,templateInfo.nodeList);}return dom;}/**
        * Removes and unbinds the nodes previously contained in the provided
        * DocumentFragment returned from `_stampTemplate`.
        *
@@ -5101,7 +5120,7 @@ The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
 The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
 Code distributed by Google as part of the polymer project is also
 subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
-*/'use strict';var k={};function n(){this.end=this.start=0;this.rules=this.parent=this.previous=null;this.cssText=this.parsedCssText="";this.atRule=!1;this.type=0;this.parsedSelector=this.selector=this.keyframesName="";}function p(a){a=a.replace(aa,"").replace(ba,"");var b=q,c=a,d=new n();d.start=0;d.end=c.length;for(var e=d,f=0,h=c.length;f<h;f++){if("{"===c[f]){e.rules||(e.rules=[]);var g=e,m=g.rules[g.rules.length-1]||null,e=new n();e.start=f+1;e.parent=g;e.previous=m;g.rules.push(e);}else"}"===c[f]&&(e.end=f+1,e=e.parent||d);}return b(d,a);}function q(a,b){var c=b.substring(a.start,a.end-1);a.parsedCssText=a.cssText=c.trim();a.parent&&((c=b.substring(a.previous?a.previous.end:a.parent.start,a.start-1),c=ca(c),c=c.replace(r," "),c=c.substring(c.lastIndexOf(";")+1),c=a.parsedSelector=a.selector=c.trim(),a.atRule=!c.indexOf("@"),a.atRule)?c.indexOf("@media")?c.match(da)&&(a.type=u,a.keyframesName=a.selector.split(r).pop()):a.type=t:a.type=c.indexOf("--")?v:x);if(c=a.rules)for(var d=0,e=c.length,f;d<e&&(f=c[d]);d++){q(f,b);}return a;}function ca(a){return a.replace(/\\([0-9a-f]{1,6})\s/gi,function(a,c){a=c;for(c=6-a.length;c--;){a="0"+a;}return"\\"+a;});}function y(a,b,c){c=void 0===c?"":c;var d="";if(a.cssText||a.rules){var e=a.rules,f;if(f=e)f=e[0],f=!(f&&f.selector&&0===f.selector.indexOf("--"));if(f){f=0;for(var h=e.length,g;f<h&&(g=e[f]);f++){d=y(g,b,d);}}else b?b=a.cssText:(b=a.cssText,b=b.replace(ea,"").replace(fa,""),b=b.replace(ga,"").replace(ha,"")),(d=b.trim())&&(d="  "+d+"\n");}d&&(a.selector&&(c+=a.selector+" {\n"),c+=d,a.selector&&(c+="}\n\n"));return c;}var v=1,u=7,t=4,x=1E3,aa=/\/\*[^*]*\*+([^/*][^*]*\*+)*\//gim,ba=/@import[^;]*;/gim,ea=/(?:^[^;\-\s}]+)?--[^;{}]*?:[^{};]*?(?:[;\n]|$)/gim,fa=/(?:^[^;\-\s}]+)?--[^;{}]*?:[^{};]*?{[^}]*?}(?:[;\n]|$)?/gim,ga=/@apply\s*\(?[^);]*\)?\s*(?:[;\n]|$)?/gim,ha=/[^;:]*?:[^;]*?var\([^;]*\)(?:[;\n]|$)?/gim,da=/^@[^\s]*keyframes/,r=/\s+/g;var ia=Promise.resolve();function ja(a){if(a=k[a])a._applyShimCurrentVersion=a._applyShimCurrentVersion||0,a._applyShimValidatingVersion=a._applyShimValidatingVersion||0,a._applyShimNextVersion=(a._applyShimNextVersion||0)+1;}function z(a){return a._applyShimCurrentVersion===a._applyShimNextVersion;}function ka(a){a._applyShimValidatingVersion=a._applyShimNextVersion;a.a||(a.a=!0,ia.then(function(){a._applyShimCurrentVersion=a._applyShimNextVersion;a.a=!1;}));};var A=/(?:^|[;\s{]\s*)(--[\w-]*?)\s*:\s*(?:((?:'(?:\\'|.)*?'|"(?:\\"|.)*?"|\([^\)]*?\)|[^};{])+)|\{([^\}]*)\}(?:(?=[;\s}])|$))/gi,B=/(?:^|\W+)@apply\s*\(?([^);\n]*)\)?/gi,la=/@media[^(]*(\([^)]*\))/;var C=!(window.ShadyDOM&&window.ShadyDOM.inUse),E;function F(a){E=a&&a.shimcssproperties?!1:C||!(navigator.userAgent.match("AppleWebKit/601")||!window.CSS||!CSS.supports||!CSS.supports("box-shadow","0 0 0 var(--foo)"));}window.ShadyCSS&&void 0!==window.ShadyCSS.nativeCss?E=window.ShadyCSS.nativeCss:window.ShadyCSS?(F(window.ShadyCSS),window.ShadyCSS=void 0):F(window.WebComponents&&window.WebComponents.flags);var G=E;function H(a){if(!a)return"";"string"===typeof a&&(a=p(a));return y(a,G);}function I(a){!a.__cssRules&&a.textContent&&(a.__cssRules=p(a.textContent));return a.__cssRules||null;}function J(a,b,c,d){if(a){var e=!1,f=a.type;if(d&&f===t){var h=a.selector.match(la);h&&(window.matchMedia(h[1]).matches||(e=!0));}f===v?b(a):c&&f===u?c(a):f===x&&(e=!0);if((a=a.rules)&&!e)for(var e=0,f=a.length,g;e<f&&(g=a[e]);e++){J(g,b,c,d);}}}function K(a,b){var c=a.indexOf("var(");if(-1===c)return b(a,"","","");a:{var d=0;var e=c+3;for(var f=a.length;e<f;e++){if("("===a[e])d++;else if(")"===a[e]&&! --d)break a;}e=-1;}d=a.substring(c+4,e);c=a.substring(0,c);a=K(a.substring(e+1),b);e=d.indexOf(",");return-1===e?b(c,d.trim(),"",a):b(c,d.substring(0,e).trim(),d.substring(e+1).trim(),a);};var ma=/;\s*/m,na=/^\s*(initial)|(inherit)\s*$/;function L(){this.a={};}L.prototype.set=function(a,b){a=a.trim();this.a[a]={h:b,i:{}};};L.prototype.get=function(a){a=a.trim();return this.a[a]||null;};var M=null;function N(){this.b=this.c=null;this.a=new L();}N.prototype.o=function(a){a=B.test(a)||A.test(a);B.lastIndex=0;A.lastIndex=0;return a;};N.prototype.m=function(a,b){a=a.content.querySelector("style");var c=null;a&&(c=this.j(a,b));return c;};N.prototype.j=function(a,b){b=void 0===b?"":b;var c=I(a);this.l(c,b);a.textContent=H(c);return c;};N.prototype.f=function(a){var b=this,c=I(a);J(c,function(a){":root"===a.selector&&(a.selector="html");b.g(a);});a.textContent=H(c);return c;};N.prototype.l=function(a,b){var c=this;this.c=b;J(a,function(a){c.g(a);});this.c=null;};N.prototype.g=function(a){a.cssText=oa(this,a.parsedCssText);":root"===a.selector&&(a.selector=":host > *");};function oa(a,b){b=b.replace(A,function(b,d,e,f){return pa(a,b,d,e,f);});return O(a,b);}function O(a,b){for(var c;c=B.exec(b);){var d=c[0],e=c[1];c=c.index;var f=b.slice(0,c+d.indexOf("@apply"));b=b.slice(c+d.length);var h=P(a,f),d=void 0;var g=a;var e=e.replace(ma,""),m=[];var l=g.a.get(e);l||(g.a.set(e,{}),l=g.a.get(e));if(l)for(d in g.c&&(l.i[g.c]=!0),l.h){g=h&&h[d],l=[d,": var(",e,"_-_",d],g&&l.push(",",g),l.push(")"),m.push(l.join(""));}d=m.join("; ");b=""+f+d+b;B.lastIndex=c+d.length;}return b;}function P(a,b){b=b.split(";");for(var c,d,e={},f=0,h;f<b.length;f++){if(c=b[f])if(h=c.split(":"),1<h.length){c=h[0].trim();var g=a;d=c;h=h.slice(1).join(":");var m=na.exec(h);m&&(m[1]?(g.b||(g.b=document.createElement("meta"),g.b.setAttribute("apply-shim-measure",""),g.b.style.all="initial",document.head.appendChild(g.b)),d=window.getComputedStyle(g.b).getPropertyValue(d)):d="apply-shim-inherit",h=d);d=h;e[c]=d;}}return e;}function qa(a,b){if(M)for(var c in b.i){c!==a.c&&M(c);}}function pa(a,b,c,d,e){d&&K(d,function(b,c){c&&a.a.get(c)&&(e="@apply "+c+";");});if(!e)return b;var f=O(a,e),h=b.slice(0,b.indexOf("--")),g=f=P(a,f),m=a.a.get(c),l=m&&m.h;l?g=Object.assign(Object.create(l),f):a.a.set(c,g);var X=[],w,Y=!1;for(w in g){var D=f[w];void 0===D&&(D="initial");!l||w in l||(Y=!0);X.push(""+c+"_-_"+w+": "+D);}Y&&qa(a,m);m&&(m.h=g);d&&(h=b+";"+h);return""+h+X.join("; ")+";";}N.prototype.detectMixin=N.prototype.o;N.prototype.transformStyle=N.prototype.j;N.prototype.transformCustomStyle=N.prototype.f;N.prototype.transformRules=N.prototype.l;N.prototype.transformRule=N.prototype.g;N.prototype.transformTemplate=N.prototype.m;N.prototype._separator="_-_";Object.defineProperty(N.prototype,"invalidCallback",{get:function get(){return M;},set:function set(a){M=a;}});var Q=null,R=window.HTMLImports&&window.HTMLImports.whenReady||null,S;function ra(a){requestAnimationFrame(function(){R?R(a):(Q||(Q=new Promise(function(a){S=a;}),"complete"===document.readyState?S():document.addEventListener("readystatechange",function(){"complete"===document.readyState&&S();})),Q.then(function(){a&&a();}));});};var T=new N();function U(){var a=this;this.a=null;ra(function(){V(a);});T.invalidCallback=ja;}function V(a){a.a||(a.a=window.ShadyCSS.CustomStyleInterface,a.a&&(a.a.transformCallback=function(a){T.f(a);},a.a.validateCallback=function(){requestAnimationFrame(function(){a.a.enqueued&&W(a);});}));}U.prototype.prepareTemplate=function(a,b){V(this);k[b]=a;b=T.m(a,b);a._styleAst=b;};function W(a){V(a);if(a.a){var b=a.a.processStyles();if(a.a.enqueued){for(var c=0;c<b.length;c++){var d=a.a.getStyleForCustomStyle(b[c]);d&&T.f(d);}a.a.enqueued=!1;}}}U.prototype.styleSubtree=function(a,b){V(this);if(b)for(var c in b){null===c?a.style.removeProperty(c):a.style.setProperty(c,b[c]);}if(a.shadowRoot)for(this.styleElement(a),a=a.shadowRoot.children||a.shadowRoot.childNodes,b=0;b<a.length;b++){this.styleSubtree(a[b]);}else for(a=a.children||a.childNodes,b=0;b<a.length;b++){this.styleSubtree(a[b]);}};U.prototype.styleElement=function(a){V(this);var b=a.localName,c;b?-1<b.indexOf("-")?c=b:c=a.getAttribute&&a.getAttribute("is")||"":c=a.is;if((b=k[c])&&!z(b)){if(z(b)||b._applyShimValidatingVersion!==b._applyShimNextVersion)this.prepareTemplate(b,c),ka(b);if(a=a.shadowRoot)if(a=a.querySelector("style"))a.__cssRules=b._styleAst,a.textContent=H(b._styleAst);}};U.prototype.styleDocument=function(a){V(this);this.styleSubtree(document.body,a);};if(!window.ShadyCSS||!window.ShadyCSS.ScopingShim){var Z=new U(),sa=window.ShadyCSS&&window.ShadyCSS.CustomStyleInterface;window.ShadyCSS={prepareTemplate:function prepareTemplate(a,b){W(Z);Z.prepareTemplate(a,b);},styleSubtree:function styleSubtree(a,b){W(Z);Z.styleSubtree(a,b);},styleElement:function styleElement(a){W(Z);Z.styleElement(a);},styleDocument:function styleDocument(a){W(Z);Z.styleDocument(a);},getComputedStyleValue:function getComputedStyleValue(a,b){return(a=window.getComputedStyle(a).getPropertyValue(b))?a.trim():"";},nativeCss:G,nativeShadow:C};sa&&(window.ShadyCSS.CustomStyleInterface=sa);}window.ShadyCSS.ApplyShim=T;}).call(undefined);//# sourceMappingURL=apply-shim.min.js.map
+*/'use strict';var l=!(window.ShadyDOM&&window.ShadyDOM.inUse),p;function r(a){p=a&&a.shimcssproperties?!1:l||!(navigator.userAgent.match(/AppleWebKit\/601|Edge\/15/)||!window.CSS||!CSS.supports||!CSS.supports("box-shadow","0 0 0 var(--foo)"));}var t;window.ShadyCSS&&void 0!==window.ShadyCSS.cssBuild&&(t=window.ShadyCSS.cssBuild);var aa=!(!window.ShadyCSS||!window.ShadyCSS.disableRuntime);window.ShadyCSS&&void 0!==window.ShadyCSS.nativeCss?p=window.ShadyCSS.nativeCss:window.ShadyCSS?(r(window.ShadyCSS),window.ShadyCSS=void 0):r(window.WebComponents&&window.WebComponents.flags);var u=p,v=t;function w(){this.end=this.start=0;this.rules=this.parent=this.previous=null;this.cssText=this.parsedCssText="";this.atRule=!1;this.type=0;this.parsedSelector=this.selector=this.keyframesName="";}function x(a){a=a.replace(ba,"").replace(ca,"");var b=y,c=a,e=new w();e.start=0;e.end=c.length;for(var d=e,f=0,g=c.length;f<g;f++){if("{"===c[f]){d.rules||(d.rules=[]);var h=d,k=h.rules[h.rules.length-1]||null;d=new w();d.start=f+1;d.parent=h;d.previous=k;h.rules.push(d);}else"}"===c[f]&&(d.end=f+1,d=d.parent||e);}return b(e,a);}function y(a,b){var c=b.substring(a.start,a.end-1);a.parsedCssText=a.cssText=c.trim();a.parent&&(c=b.substring(a.previous?a.previous.end:a.parent.start,a.start-1),c=da(c),c=c.replace(z," "),c=c.substring(c.lastIndexOf(";")+1),c=a.parsedSelector=a.selector=c.trim(),a.atRule=0===c.indexOf("@"),a.atRule?0===c.indexOf("@media")?a.type=A:c.match(ea)&&(a.type=B,a.keyframesName=a.selector.split(z).pop()):a.type=0===c.indexOf("--")?C:D);if(c=a.rules)for(var e=0,d=c.length,f=void 0;e<d&&(f=c[e]);e++){y(f,b);}return a;}function da(a){return a.replace(/\\([0-9a-f]{1,6})\s/gi,function(a,c){a=c;for(c=6-a.length;c--;){a="0"+a;}return"\\"+a;});}function E(a,b,c){c=void 0===c?"":c;var e="";if(a.cssText||a.rules){var d=a.rules,f;if(f=d)f=d[0],f=!(f&&f.selector&&0===f.selector.indexOf("--"));if(f){f=0;for(var g=d.length,h=void 0;f<g&&(h=d[f]);f++){e=E(h,b,e);}}else b?b=a.cssText:(b=a.cssText,b=b.replace(fa,"").replace(ha,""),b=b.replace(ia,"").replace(ja,"")),(e=b.trim())&&(e="  "+e+"\n");}e&&(a.selector&&(c+=a.selector+" {\n"),c+=e,a.selector&&(c+="}\n\n"));return c;}var D=1,B=7,A=4,C=1E3,ba=/\/\*[^*]*\*+([^/*][^*]*\*+)*\//gim,ca=/@import[^;]*;/gim,fa=/(?:^[^;\-\s}]+)?--[^;{}]*?:[^{};]*?(?:[;\n]|$)/gim,ha=/(?:^[^;\-\s}]+)?--[^;{}]*?:[^{};]*?{[^}]*?}(?:[;\n]|$)?/gim,ia=/@apply\s*\(?[^);]*\)?\s*(?:[;\n]|$)?/gim,ja=/[^;:]*?:[^;]*?var\([^;]*\)(?:[;\n]|$)?/gim,ea=/^@[^\s]*keyframes/,z=/\s+/g;var G=/(?:^|[;\s{]\s*)(--[\w-]*?)\s*:\s*(?:((?:'(?:\\'|.)*?'|"(?:\\"|.)*?"|\([^)]*?\)|[^};{])+)|\{([^}]*)\}(?:(?=[;\s}])|$))/gi,H=/(?:^|\W+)@apply\s*\(?([^);\n]*)\)?/gi,ka=/@media\s(.*)/;var I=new Set();function J(a){if(!a)return"";"string"===typeof a&&(a=x(a));return E(a,u);}function K(a){!a.__cssRules&&a.textContent&&(a.__cssRules=x(a.textContent));return a.__cssRules||null;}function L(a,b,c,e){if(a){var d=!1,f=a.type;if(e&&f===A){var g=a.selector.match(ka);g&&(window.matchMedia(g[1]).matches||(d=!0));}f===D?b(a):c&&f===B?c(a):f===C&&(d=!0);if((a=a.rules)&&!d)for(d=0,f=a.length,g=void 0;d<f&&(g=a[d]);d++){L(g,b,c,e);}}}function M(a,b){var c=a.indexOf("var(");if(-1===c)return b(a,"","","");a:{var e=0;var d=c+3;for(var f=a.length;d<f;d++){if("("===a[d])e++;else if(")"===a[d]&&0===--e)break a;}d=-1;}e=a.substring(c+4,d);c=a.substring(0,c);a=M(a.substring(d+1),b);d=e.indexOf(",");return-1===d?b(c,e.trim(),"",a):b(c,e.substring(0,d).trim(),e.substring(d+1).trim(),a);}function N(a){if(void 0!==v)return v;if(void 0===a.__cssBuild){var b=a.getAttribute("css-build");if(b)a.__cssBuild=b;else{a:{b="template"===a.localName?a.content.firstChild:a.firstChild;if(b instanceof Comment&&(b=b.textContent.trim().split(":"),"css-build"===b[0])){b=b[1];break a;}b="";}if(""!==b){var c="template"===a.localName?a.content.firstChild:a.firstChild;c.parentNode.removeChild(c);}a.__cssBuild=b;}}return a.__cssBuild||"";};var la=/;\s*/m,ma=/^\s*(initial)|(inherit)\s*$/,O=/\s*!important/;function P(){this.a={};}P.prototype.set=function(a,b){a=a.trim();this.a[a]={h:b,i:{}};};P.prototype.get=function(a){a=a.trim();return this.a[a]||null;};var Q=null;function R(){this.b=this.c=null;this.a=new P();}R.prototype.o=function(a){a=H.test(a)||G.test(a);H.lastIndex=0;G.lastIndex=0;return a;};R.prototype.m=function(a,b){if(void 0===a._gatheredStyle){var c=[];for(var e=a.content.querySelectorAll("style"),d=0;d<e.length;d++){var f=e[d];if(f.hasAttribute("shady-unscoped")){if(!l){var g=f.textContent;I.has(g)||(I.add(g),g=f.cloneNode(!0),document.head.appendChild(g));f.parentNode.removeChild(f);}}else c.push(f.textContent),f.parentNode.removeChild(f);}(c=c.join("").trim())?(e=document.createElement("style"),e.textContent=c,a.content.insertBefore(e,a.content.firstChild),c=e):c=null;a._gatheredStyle=c;}return(a=a._gatheredStyle)?this.j(a,b):null;};R.prototype.j=function(a,b){b=void 0===b?"":b;var c=K(a);this.l(c,b);a.textContent=J(c);return c;};R.prototype.f=function(a){var b=this,c=K(a);L(c,function(a){":root"===a.selector&&(a.selector="html");b.g(a);});a.textContent=J(c);return c;};R.prototype.l=function(a,b){var c=this;this.c=b;L(a,function(a){c.g(a);});this.c=null;};R.prototype.g=function(a){a.cssText=na(this,a.parsedCssText,a);":root"===a.selector&&(a.selector=":host > *");};function na(a,b,c){b=b.replace(G,function(b,d,f,g){return oa(a,b,d,f,g,c);});return S(a,b,c);}function pa(a,b){for(var c=b;c.parent;){c=c.parent;}var e={},d=!1;L(c,function(c){(d=d||c===b)||c.selector===b.selector&&Object.assign(e,T(a,c.parsedCssText));});return e;}function S(a,b,c){for(var e;e=H.exec(b);){var d=e[0],f=e[1];e=e.index;var g=b.slice(0,e+d.indexOf("@apply"));b=b.slice(e+d.length);var h=c?pa(a,c):{};Object.assign(h,T(a,g));d=void 0;var k=a;f=f.replace(la,"");var n=[];var m=k.a.get(f);m||(k.a.set(f,{}),m=k.a.get(f));if(m){k.c&&(m.i[k.c]=!0);var q=m.h;for(d in q){k=h&&h[d],m=[d,": var(",f,"_-_",d],k&&m.push(",",k.replace(O,"")),m.push(")"),O.test(q[d])&&m.push(" !important"),n.push(m.join(""));}}d=n.join("; ");b=g+d+b;H.lastIndex=e+d.length;}return b;}function T(a,b,c){c=void 0===c?!1:c;b=b.split(";");for(var e,d,f={},g=0,h;g<b.length;g++){if(e=b[g])if(h=e.split(":"),1<h.length){e=h[0].trim();d=h.slice(1).join(":");if(c){var k=a;h=e;var n=ma.exec(d);n&&(n[1]?(k.b||(k.b=document.createElement("meta"),k.b.setAttribute("apply-shim-measure",""),k.b.style.all="initial",document.head.appendChild(k.b)),h=window.getComputedStyle(k.b).getPropertyValue(h)):h="apply-shim-inherit",d=h);}f[e]=d;}}return f;}function qa(a,b){if(Q)for(var c in b.i){c!==a.c&&Q(c);}}function oa(a,b,c,e,d,f){e&&M(e,function(b,c){c&&a.a.get(c)&&(d="@apply "+c+";");});if(!d)return b;var g=S(a,""+d,f);f=b.slice(0,b.indexOf("--"));var h=g=T(a,g,!0),k=a.a.get(c),n=k&&k.h;n?h=Object.assign(Object.create(n),g):a.a.set(c,h);var m=[],q,Z=!1;for(q in h){var F=g[q];void 0===F&&(F="initial");!n||q in n||(Z=!0);m.push(c+"_-_"+q+": "+F);}Z&&qa(a,k);k&&(k.h=h);e&&(f=b+";"+f);return f+m.join("; ")+";";}R.prototype.detectMixin=R.prototype.o;R.prototype.transformStyle=R.prototype.j;R.prototype.transformCustomStyle=R.prototype.f;R.prototype.transformRules=R.prototype.l;R.prototype.transformRule=R.prototype.g;R.prototype.transformTemplate=R.prototype.m;R.prototype._separator="_-_";Object.defineProperty(R.prototype,"invalidCallback",{get:function get(){return Q;},set:function set(a){Q=a;}});var U={};var ra=Promise.resolve();function sa(a){if(a=U[a])a._applyShimCurrentVersion=a._applyShimCurrentVersion||0,a._applyShimValidatingVersion=a._applyShimValidatingVersion||0,a._applyShimNextVersion=(a._applyShimNextVersion||0)+1;}function ta(a){return a._applyShimCurrentVersion===a._applyShimNextVersion;}function ua(a){a._applyShimValidatingVersion=a._applyShimNextVersion;a._validating||(a._validating=!0,ra.then(function(){a._applyShimCurrentVersion=a._applyShimNextVersion;a._validating=!1;}));};var V=new R();function W(){this.a=null;V.invalidCallback=sa;}function X(a){!a.a&&window.ShadyCSS.CustomStyleInterface&&(a.a=window.ShadyCSS.CustomStyleInterface,a.a.transformCallback=function(a){V.f(a);},a.a.validateCallback=function(){requestAnimationFrame(function(){a.a.enqueued&&a.flushCustomStyles();});});}W.prototype.prepareTemplate=function(a,b){X(this);""===N(a)&&(U[b]=a,b=V.m(a,b),a._styleAst=b);};W.prototype.flushCustomStyles=function(){X(this);if(this.a){var a=this.a.processStyles();if(this.a.enqueued){for(var b=0;b<a.length;b++){var c=this.a.getStyleForCustomStyle(a[b]);c&&V.f(c);}this.a.enqueued=!1;}}};W.prototype.styleSubtree=function(a,b){X(this);if(b)for(var c in b){null===c?a.style.removeProperty(c):a.style.setProperty(c,b[c]);}if(a.shadowRoot)for(this.styleElement(a),a=a.shadowRoot.children||a.shadowRoot.childNodes,b=0;b<a.length;b++){this.styleSubtree(a[b]);}else for(a=a.children||a.childNodes,b=0;b<a.length;b++){this.styleSubtree(a[b]);}};W.prototype.styleElement=function(a){X(this);var b=a.localName,c;b?-1<b.indexOf("-")?c=b:c=a.getAttribute&&a.getAttribute("is")||"":c=a.is;b=U[c];if(!(b&&""!==N(b)||!b||ta(b))){if(ta(b)||b._applyShimValidatingVersion!==b._applyShimNextVersion)this.prepareTemplate(b,c),ua(b);if(a=a.shadowRoot)if(a=a.querySelector("style"))a.__cssRules=b._styleAst,a.textContent=J(b._styleAst);}};W.prototype.styleDocument=function(a){X(this);this.styleSubtree(document.body,a);};if(!window.ShadyCSS||!window.ShadyCSS.ScopingShim){var Y=new W(),va=window.ShadyCSS&&window.ShadyCSS.CustomStyleInterface;window.ShadyCSS={prepareTemplate:function prepareTemplate(a,b){Y.flushCustomStyles();Y.prepareTemplate(a,b);},prepareTemplateStyles:function prepareTemplateStyles(a,b,c){window.ShadyCSS.prepareTemplate(a,b,c);},prepareTemplateDom:function prepareTemplateDom(){},styleSubtree:function styleSubtree(a,b){Y.flushCustomStyles();Y.styleSubtree(a,b);},styleElement:function styleElement(a){Y.flushCustomStyles();Y.styleElement(a);},styleDocument:function styleDocument(a){Y.flushCustomStyles();Y.styleDocument(a);},getComputedStyleValue:function getComputedStyleValue(a,b){return(a=window.getComputedStyle(a).getPropertyValue(b))?a.trim():"";},flushCustomStyles:function flushCustomStyles(){Y.flushCustomStyles();},nativeCss:u,nativeShadow:l,cssBuild:v,disableRuntime:aa};va&&(window.ShadyCSS.CustomStyleInterface=va);}window.ShadyCSS.ApplyShim=V;}).call(undefined);//# sourceMappingURL=apply-shim.min.js.map
 (function(){'use strict';// detect native touch action support
 var HAS_NATIVE_TA=typeof document.head.style.touchAction==='string';var GESTURE_KEY='__polymerGestures';var HANDLED_OBJ='__polymerGesturesHandled';var TOUCH_ACTION='__polymerGesturesTouchAction';// radius for tap and track
 var TAP_DISTANCE=25;var TRACK_DISTANCE=5;// number of last N track positions to keep
@@ -6558,7 +6577,7 @@ The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
 The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
 Code distributed by Google as part of the polymer project is also
 subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
-*/'use strict';var c=!(window.ShadyDOM&&window.ShadyDOM.inUse),f;function g(a){f=a&&a.shimcssproperties?!1:c||!(navigator.userAgent.match("AppleWebKit/601")||!window.CSS||!CSS.supports||!CSS.supports("box-shadow","0 0 0 var(--foo)"));}window.ShadyCSS&&void 0!==window.ShadyCSS.nativeCss?f=window.ShadyCSS.nativeCss:window.ShadyCSS?(g(window.ShadyCSS),window.ShadyCSS=void 0):g(window.WebComponents&&window.WebComponents.flags);var h=f;function k(a,b){for(var d in b){null===d?a.style.removeProperty(d):a.style.setProperty(d,b[d]);}};var l=null,m=window.HTMLImports&&window.HTMLImports.whenReady||null,q;function r(){var a=t;requestAnimationFrame(function(){m?m(a):(l||(l=new Promise(function(a){q=a;}),"complete"===document.readyState?q():document.addEventListener("readystatechange",function(){"complete"===document.readyState&&q();})),l.then(function(){a&&a();}));});};var u=null,t=null;function v(){this.customStyles=[];this.enqueued=!1;}function x(a){!a.enqueued&&t&&(a.enqueued=!0,r());}v.prototype.c=function(a){a.__seenByShadyCSS||(a.__seenByShadyCSS=!0,this.customStyles.push(a),x(this));};v.prototype.b=function(a){if(a.__shadyCSSCachedStyle)return a.__shadyCSSCachedStyle;var b;a.getStyle?b=a.getStyle():b=a;return b;};v.prototype.a=function(){for(var a=this.customStyles,b=0;b<a.length;b++){var d=a[b];if(!d.__shadyCSSCachedStyle){var e=this.b(d);if(e){var n=e.__appliedElement;if(n)for(var p=0;p<e.attributes.length;p++){var w=e.attributes[p];n.setAttribute(w.name,w.value);}e=n||e;u&&u(e);d.__shadyCSSCachedStyle=e;}}}return a;};v.prototype.addCustomStyle=v.prototype.c;v.prototype.getStyleForCustomStyle=v.prototype.b;v.prototype.processStyles=v.prototype.a;Object.defineProperties(v.prototype,{transformCallback:{get:function get(){return u;},set:function set(a){u=a;}},validateCallback:{get:function get(){return t;},set:function set(a){var b=!1;t||(b=!0);t=a;b&&x(this);}}});var y=new v();window.ShadyCSS||(window.ShadyCSS={prepareTemplate:function prepareTemplate(){},styleSubtree:function styleSubtree(a,b){y.a();k(a,b);},styleElement:function styleElement(){y.a();},styleDocument:function styleDocument(a){y.a();k(document.body,a);},getComputedStyleValue:function getComputedStyleValue(a,b){return(a=window.getComputedStyle(a).getPropertyValue(b))?a.trim():"";},nativeCss:h,nativeShadow:c});window.ShadyCSS.CustomStyleInterface=y;}).call(undefined);//# sourceMappingURL=custom-style-interface.min.js.map
+*/'use strict';var c=null,f=window.HTMLImports&&window.HTMLImports.whenReady||null,g;function h(a){requestAnimationFrame(function(){f?f(a):(c||(c=new Promise(function(a){g=a;}),"complete"===document.readyState?g():document.addEventListener("readystatechange",function(){"complete"===document.readyState&&g();})),c.then(function(){a&&a();}));});};var k=null,l=null;function m(){this.customStyles=[];this.enqueued=!1;h(function(){window.ShadyCSS.flushCustomStyles&&window.ShadyCSS.flushCustomStyles();});}function n(a){!a.enqueued&&l&&(a.enqueued=!0,h(l));}m.prototype.c=function(a){a.__seenByShadyCSS||(a.__seenByShadyCSS=!0,this.customStyles.push(a),n(this));};m.prototype.b=function(a){if(a.__shadyCSSCachedStyle)return a.__shadyCSSCachedStyle;var b;a.getStyle?b=a.getStyle():b=a;return b;};m.prototype.a=function(){for(var a=this.customStyles,b=0;b<a.length;b++){var d=a[b];if(!d.__shadyCSSCachedStyle){var e=this.b(d);e&&(e=e.__appliedElement||e,k&&k(e),d.__shadyCSSCachedStyle=e);}}return a;};m.prototype.addCustomStyle=m.prototype.c;m.prototype.getStyleForCustomStyle=m.prototype.b;m.prototype.processStyles=m.prototype.a;Object.defineProperties(m.prototype,{transformCallback:{get:function get(){return k;},set:function set(a){k=a;}},validateCallback:{get:function get(){return l;},set:function set(a){var b=!1;l||(b=!0);l=a;b&&n(this);}}});function p(a,b){for(var d in b){null===d?a.style.removeProperty(d):a.style.setProperty(d,b[d]);}};var q=!(window.ShadyDOM&&window.ShadyDOM.inUse),r;function t(a){r=a&&a.shimcssproperties?!1:q||!(navigator.userAgent.match(/AppleWebKit\/601|Edge\/15/)||!window.CSS||!CSS.supports||!CSS.supports("box-shadow","0 0 0 var(--foo)"));}var u;window.ShadyCSS&&void 0!==window.ShadyCSS.cssBuild&&(u=window.ShadyCSS.cssBuild);var v=!(!window.ShadyCSS||!window.ShadyCSS.disableRuntime);window.ShadyCSS&&void 0!==window.ShadyCSS.nativeCss?r=window.ShadyCSS.nativeCss:window.ShadyCSS?(t(window.ShadyCSS),window.ShadyCSS=void 0):t(window.WebComponents&&window.WebComponents.flags);var w=r,x=u;var y=new m();window.ShadyCSS||(window.ShadyCSS={prepareTemplate:function prepareTemplate(){},prepareTemplateDom:function prepareTemplateDom(){},prepareTemplateStyles:function prepareTemplateStyles(){},styleSubtree:function styleSubtree(a,b){y.a();p(a,b);},styleElement:function styleElement(){y.a();},styleDocument:function styleDocument(a){y.a();p(document.body,a);},getComputedStyleValue:function getComputedStyleValue(a,b){return(a=window.getComputedStyle(a).getPropertyValue(b))?a.trim():"";},flushCustomStyles:function flushCustomStyles(){},nativeCss:w,nativeShadow:q,cssBuild:x,disableRuntime:v});window.ShadyCSS.CustomStyleInterface=y;}).call(undefined);//# sourceMappingURL=custom-style-interface.min.js.map
 (function(){'use strict';var attr='include';var CustomStyleInterface=window.ShadyCSS.CustomStyleInterface;/**
    * Custom element for defining styles in the main document that can take
    * advantage of several special features of Polymer's styling system:
@@ -6691,121 +6710,129 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
      * @protected
      */_shouldPropertyChange:function _shouldPropertyChange(property,value,old){return mutablePropertyChange(this,property,value,old,this.mutableData);}};})();// bc
 Polymer.Base=Polymer.LegacyElementMixin(HTMLElement).prototype;(function(){'use strict';/**
-     * Chrome uses an older version of DOM Level 3 Keyboard Events
-     *
-     * Most keys are labeled as text, but some are Unicode codepoints.
-     * Values taken from: http://www.w3.org/TR/2007/WD-DOM-Level-3-Events-20071221/keyset.html#KeySet-Set
-     */var KEY_IDENTIFIER={'U+0008':'backspace','U+0009':'tab','U+001B':'esc','U+0020':'space','U+007F':'del'};/**
-     * Special table for KeyboardEvent.keyCode.
-     * KeyboardEvent.keyIdentifier is better, and KeyBoardEvent.key is even better
-     * than that.
-     *
-     * Values from: https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent.keyCode#Value_of_keyCode
-     */var KEY_CODE={8:'backspace',9:'tab',13:'enter',27:'esc',33:'pageup',34:'pagedown',35:'end',36:'home',32:'space',37:'left',38:'up',39:'right',40:'down',46:'del',106:'*'};/**
-     * MODIFIER_KEYS maps the short name for modifier keys used in a key
-     * combo string to the property name that references those same keys
-     * in a KeyboardEvent instance.
-     */var MODIFIER_KEYS={'shift':'shiftKey','ctrl':'ctrlKey','alt':'altKey','meta':'metaKey'};/**
-     * KeyboardEvent.key is mostly represented by printable character made by
-     * the keyboard, with unprintable keys labeled nicely.
-     *
-     * However, on OS X, Alt+char can make a Unicode character that follows an
-     * Apple-specific mapping. In this case, we fall back to .keyCode.
-     */var KEY_CHAR=/[a-z0-9*]/;/**
-     * Matches a keyIdentifier string.
-     */var IDENT_CHAR=/U\+/;/**
-     * Matches arrow keys in Gecko 27.0+
-     */var ARROW_KEY=/^arrow/;/**
-     * Matches space keys everywhere (notably including IE10's exceptional name
-     * `spacebar`).
-     */var SPACE_KEY=/^space(bar)?/;/**
-     * Matches ESC key.
-     *
-     * Value from: http://w3c.github.io/uievents-key/#key-Escape
-     */var ESC_KEY=/^escape$/;/**
-     * Transforms the key.
-     * @param {string} key The KeyBoardEvent.key
-     * @param {Boolean} [noSpecialChars] Limits the transformation to
-     * alpha-numeric characters.
-     */function transformKey(key,noSpecialChars){var validKey='';if(key){var lKey=key.toLowerCase();if(lKey===' '||SPACE_KEY.test(lKey)){validKey='space';}else if(ESC_KEY.test(lKey)){validKey='esc';}else if(lKey.length==1){if(!noSpecialChars||KEY_CHAR.test(lKey)){validKey=lKey;}}else if(ARROW_KEY.test(lKey)){validKey=lKey.replace('arrow','');}else if(lKey=='multiply'){// numpad '*' can map to Multiply on IE/Windows
+   * Chrome uses an older version of DOM Level 3 Keyboard Events
+   *
+   * Most keys are labeled as text, but some are Unicode codepoints.
+   * Values taken from:
+   * http://www.w3.org/TR/2007/WD-DOM-Level-3-Events-20071221/keyset.html#KeySet-Set
+   */var KEY_IDENTIFIER={'U+0008':'backspace','U+0009':'tab','U+001B':'esc','U+0020':'space','U+007F':'del'};/**
+   * Special table for KeyboardEvent.keyCode.
+   * KeyboardEvent.keyIdentifier is better, and KeyBoardEvent.key is even better
+   * than that.
+   *
+   * Values from:
+   * https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent.keyCode#Value_of_keyCode
+   */var KEY_CODE={8:'backspace',9:'tab',13:'enter',27:'esc',33:'pageup',34:'pagedown',35:'end',36:'home',32:'space',37:'left',38:'up',39:'right',40:'down',46:'del',106:'*'};/**
+   * MODIFIER_KEYS maps the short name for modifier keys used in a key
+   * combo string to the property name that references those same keys
+   * in a KeyboardEvent instance.
+   */var MODIFIER_KEYS={'shift':'shiftKey','ctrl':'ctrlKey','alt':'altKey','meta':'metaKey'};/**
+   * KeyboardEvent.key is mostly represented by printable character made by
+   * the keyboard, with unprintable keys labeled nicely.
+   *
+   * However, on OS X, Alt+char can make a Unicode character that follows an
+   * Apple-specific mapping. In this case, we fall back to .keyCode.
+   */var KEY_CHAR=/[a-z0-9*]/;/**
+   * Matches a keyIdentifier string.
+   */var IDENT_CHAR=/U\+/;/**
+   * Matches arrow keys in Gecko 27.0+
+   */var ARROW_KEY=/^arrow/;/**
+   * Matches space keys everywhere (notably including IE10's exceptional name
+   * `spacebar`).
+   */var SPACE_KEY=/^space(bar)?/;/**
+   * Matches ESC key.
+   *
+   * Value from: http://w3c.github.io/uievents-key/#key-Escape
+   */var ESC_KEY=/^escape$/;/**
+   * Transforms the key.
+   * @param {string} key The KeyBoardEvent.key
+   * @param {Boolean} [noSpecialChars] Limits the transformation to
+   * alpha-numeric characters.
+   */function transformKey(key,noSpecialChars){var validKey='';if(key){var lKey=key.toLowerCase();if(lKey===' '||SPACE_KEY.test(lKey)){validKey='space';}else if(ESC_KEY.test(lKey)){validKey='esc';}else if(lKey.length==1){if(!noSpecialChars||KEY_CHAR.test(lKey)){validKey=lKey;}}else if(ARROW_KEY.test(lKey)){validKey=lKey.replace('arrow','');}else if(lKey=='multiply'){// numpad '*' can map to Multiply on IE/Windows
 validKey='*';}else{validKey=lKey;}}return validKey;}function transformKeyIdentifier(keyIdent){var validKey='';if(keyIdent){if(keyIdent in KEY_IDENTIFIER){validKey=KEY_IDENTIFIER[keyIdent];}else if(IDENT_CHAR.test(keyIdent)){keyIdent=parseInt(keyIdent.replace('U+','0x'),16);validKey=String.fromCharCode(keyIdent).toLowerCase();}else{validKey=keyIdent.toLowerCase();}}return validKey;}function transformKeyCode(keyCode){var validKey='';if(Number(keyCode)){if(keyCode>=65&&keyCode<=90){// ascii a-z
 // lowercase is 32 offset from uppercase
 validKey=String.fromCharCode(32+keyCode);}else if(keyCode>=112&&keyCode<=123){// function keys f1-f12
-validKey='f'+(keyCode-112);}else if(keyCode>=48&&keyCode<=57){// top 0-9 keys
+validKey='f'+(keyCode-112+1);}else if(keyCode>=48&&keyCode<=57){// top 0-9 keys
 validKey=String(keyCode-48);}else if(keyCode>=96&&keyCode<=105){// num pad 0-9
 validKey=String(keyCode-96);}else{validKey=KEY_CODE[keyCode];}}return validKey;}/**
-      * Calculates the normalized key for a KeyboardEvent.
-      * @param {KeyboardEvent} keyEvent
-      * @param {Boolean} [noSpecialChars] Set to true to limit keyEvent.key
-      * transformation to alpha-numeric chars. This is useful with key
-      * combinations like shift + 2, which on FF for MacOS produces
-      * keyEvent.key = @
-      * To get 2 returned, set noSpecialChars = true
-      * To get @ returned, set noSpecialChars = false
-     */function normalizedKeyForEvent(keyEvent,noSpecialChars){// Fall back from .key, to .detail.key for artifical keyboard events,
+   * Calculates the normalized key for a KeyboardEvent.
+   * @param {KeyboardEvent} keyEvent
+   * @param {Boolean} [noSpecialChars] Set to true to limit keyEvent.key
+   * transformation to alpha-numeric chars. This is useful with key
+   * combinations like shift + 2, which on FF for MacOS produces
+   * keyEvent.key = @
+   * To get 2 returned, set noSpecialChars = true
+   * To get @ returned, set noSpecialChars = false
+   */function normalizedKeyForEvent(keyEvent,noSpecialChars){// Fall back from .key, to .detail.key for artifical keyboard events,
 // and then to deprecated .keyIdentifier and .keyCode.
 if(keyEvent.key){return transformKey(keyEvent.key,noSpecialChars);}if(keyEvent.detail&&keyEvent.detail.key){return transformKey(keyEvent.detail.key,noSpecialChars);}return transformKeyIdentifier(keyEvent.keyIdentifier)||transformKeyCode(keyEvent.keyCode)||'';}function keyComboMatchesEvent(keyCombo,event){// For combos with modifiers we support only alpha-numeric keys
 var keyEvent=normalizedKeyForEvent(event,keyCombo.hasModifiers);return keyEvent===keyCombo.key&&(!keyCombo.hasModifiers||!!event.shiftKey===!!keyCombo.shiftKey&&!!event.ctrlKey===!!keyCombo.ctrlKey&&!!event.altKey===!!keyCombo.altKey&&!!event.metaKey===!!keyCombo.metaKey);}function parseKeyComboString(keyComboString){if(keyComboString.length===1){return{combo:keyComboString,key:keyComboString,event:'keydown'};}return keyComboString.split('+').reduce(function(parsedKeyCombo,keyComboPart){var eventParts=keyComboPart.split(':');var keyName=eventParts[0];var event=eventParts[1];if(keyName in MODIFIER_KEYS){parsedKeyCombo[MODIFIER_KEYS[keyName]]=true;parsedKeyCombo.hasModifiers=true;}else{parsedKeyCombo.key=keyName;parsedKeyCombo.event=event||'keydown';}return parsedKeyCombo;},{combo:keyComboString.split(':').shift()});}function parseEventString(eventString){return eventString.trim().split(' ').map(function(keyComboString){return parseKeyComboString(keyComboString);});}/**
-     * `Polymer.IronA11yKeysBehavior` provides a normalized interface for processing
-     * keyboard commands that pertain to [WAI-ARIA best practices](http://www.w3.org/TR/wai-aria-practices/#kbd_general_binding).
-     * The element takes care of browser differences with respect to Keyboard events
-     * and uses an expressive syntax to filter key presses.
-     *
-     * Use the `keyBindings` prototype property to express what combination of keys
-     * will trigger the callback. A key binding has the format
-     * `"KEY+MODIFIER:EVENT": "callback"` (`"KEY": "callback"` or
-     * `"KEY:EVENT": "callback"` are valid as well). Some examples:
-     *
-     *      keyBindings: {
-     *        'space': '_onKeydown', // same as 'space:keydown'
-     *        'shift+tab': '_onKeydown',
-     *        'enter:keypress': '_onKeypress',
-     *        'esc:keyup': '_onKeyup'
-     *      }
-     *
-     * The callback will receive with an event containing the following information in `event.detail`:
-     *
-     *      _onKeydown: function(event) {
-     *        console.log(event.detail.combo); // KEY+MODIFIER, e.g. "shift+tab"
-     *        console.log(event.detail.key); // KEY only, e.g. "tab"
-     *        console.log(event.detail.event); // EVENT, e.g. "keydown"
-     *        console.log(event.detail.keyboardEvent); // the original KeyboardEvent
-     *      }
-     *
-     * Use the `keyEventTarget` attribute to set up event handlers on a specific
-     * node.
-     *
-     * See the [demo source code](https://github.com/PolymerElements/iron-a11y-keys-behavior/blob/master/demo/x-key-aware.html)
-     * for an example.
-     *
-     * @demo demo/index.html
-     * @polymerBehavior
-     */Polymer.IronA11yKeysBehavior={properties:{/**
-         * The EventTarget that will be firing relevant KeyboardEvents. Set it to
-         * `null` to disable the listeners.
-         * @type {?EventTarget}
-         */keyEventTarget:{type:Object,value:function value(){return this;}},/**
-         * If true, this property will cause the implementing element to
-         * automatically stop propagation on any handled KeyboardEvents.
-         */stopKeyboardEventPropagation:{type:Boolean,value:false},_boundKeyHandlers:{type:Array,value:function value(){return[];}},// We use this due to a limitation in IE10 where instances will have
+   * `Polymer.IronA11yKeysBehavior` provides a normalized interface for processing
+   * keyboard commands that pertain to [WAI-ARIA best
+   * practices](http://www.w3.org/TR/wai-aria-practices/#kbd_general_binding). The
+   * element takes care of browser differences with respect to Keyboard events and
+   * uses an expressive syntax to filter key presses.
+   *
+   * Use the `keyBindings` prototype property to express what combination of keys
+   * will trigger the callback. A key binding has the format
+   * `"KEY+MODIFIER:EVENT": "callback"` (`"KEY": "callback"` or
+   * `"KEY:EVENT": "callback"` are valid as well). Some examples:
+   *
+   *      keyBindings: {
+   *        'space': '_onKeydown', // same as 'space:keydown'
+   *        'shift+tab': '_onKeydown',
+   *        'enter:keypress': '_onKeypress',
+   *        'esc:keyup': '_onKeyup'
+   *      }
+   *
+   * The callback will receive with an event containing the following information
+   * in `event.detail`:
+   *
+   *      _onKeydown: function(event) {
+   *        console.log(event.detail.combo); // KEY+MODIFIER, e.g. "shift+tab"
+   *        console.log(event.detail.key); // KEY only, e.g. "tab"
+   *        console.log(event.detail.event); // EVENT, e.g. "keydown"
+   *        console.log(event.detail.keyboardEvent); // the original KeyboardEvent
+   *      }
+   *
+   * Use the `keyEventTarget` attribute to set up event handlers on a specific
+   * node.
+   *
+   * See the [demo source
+   * code](https://github.com/PolymerElements/iron-a11y-keys-behavior/blob/master/demo/x-key-aware.html)
+   * for an example.
+   *
+   * @demo demo/index.html
+   * @polymerBehavior
+   */Polymer.IronA11yKeysBehavior={properties:{/**
+       * The EventTarget that will be firing relevant KeyboardEvents. Set it to
+       * `null` to disable the listeners.
+       * @type {?EventTarget}
+       */keyEventTarget:{type:Object,value:function value(){return this;}},/**
+       * If true, this property will cause the implementing element to
+       * automatically stop propagation on any handled KeyboardEvents.
+       */stopKeyboardEventPropagation:{type:Boolean,value:false},_boundKeyHandlers:{type:Array,value:function value(){return[];}},// We use this due to a limitation in IE10 where instances will have
 // own properties of everything on the "prototype".
 _imperativeKeyBindings:{type:Object,value:function value(){return{};}}},observers:['_resetKeyEventListeners(keyEventTarget, _boundKeyHandlers)'],/**
-       * To be used to express what combination of keys  will trigger the relative
-       * callback. e.g. `keyBindings: { 'esc': '_onEscPressed'}`
-       * @type {!Object}
-       */keyBindings:{},registered:function registered(){this._prepKeyBindings();},attached:function attached(){this._listenKeyEventListeners();},detached:function detached(){this._unlistenKeyEventListeners();},/**
-       * Can be used to imperatively add a key binding to the implementing
-       * element. This is the imperative equivalent of declaring a keybinding
-       * in the `keyBindings` prototype property.
-       */addOwnKeyBinding:function addOwnKeyBinding(eventString,handlerName){this._imperativeKeyBindings[eventString]=handlerName;this._prepKeyBindings();this._resetKeyEventListeners();},/**
-       * When called, will remove all imperatively-added key bindings.
-       */removeOwnKeyBindings:function removeOwnKeyBindings(){this._imperativeKeyBindings={};this._prepKeyBindings();this._resetKeyEventListeners();},/**
-       * Returns true if a keyboard event matches `eventString`.
-       *
-       * @param {KeyboardEvent} event
-       * @param {string} eventString
-       * @return {boolean}
-       */keyboardEventMatchesKeys:function keyboardEventMatchesKeys(event,eventString){var keyCombos=parseEventString(eventString);for(var i=0;i<keyCombos.length;++i){if(keyComboMatchesEvent(keyCombos[i],event)){return true;}}return false;},_collectKeyBindings:function _collectKeyBindings(){var keyBindings=this.behaviors.map(function(behavior){return behavior.keyBindings;});if(keyBindings.indexOf(this.keyBindings)===-1){keyBindings.push(this.keyBindings);}return keyBindings;},_prepKeyBindings:function _prepKeyBindings(){this._keyBindings={};this._collectKeyBindings().forEach(function(keyBindings){for(var eventString in keyBindings){this._addKeyBinding(eventString,keyBindings[eventString]);}},this);for(var eventString in this._imperativeKeyBindings){this._addKeyBinding(eventString,this._imperativeKeyBindings[eventString]);}// Give precedence to combos with modifiers to be checked first.
+     * To be used to express what combination of keys  will trigger the relative
+     * callback. e.g. `keyBindings: { 'esc': '_onEscPressed'}`
+     * @type {!Object}
+     */keyBindings:{},registered:function registered(){this._prepKeyBindings();},attached:function attached(){this._listenKeyEventListeners();},detached:function detached(){this._unlistenKeyEventListeners();},/**
+     * Can be used to imperatively add a key binding to the implementing
+     * element. This is the imperative equivalent of declaring a keybinding
+     * in the `keyBindings` prototype property.
+     *
+     * @param {string} eventString
+     * @param {string} handlerName
+     */addOwnKeyBinding:function addOwnKeyBinding(eventString,handlerName){this._imperativeKeyBindings[eventString]=handlerName;this._prepKeyBindings();this._resetKeyEventListeners();},/**
+     * When called, will remove all imperatively-added key bindings.
+     */removeOwnKeyBindings:function removeOwnKeyBindings(){this._imperativeKeyBindings={};this._prepKeyBindings();this._resetKeyEventListeners();},/**
+     * Returns true if a keyboard event matches `eventString`.
+     *
+     * @param {KeyboardEvent} event
+     * @param {string} eventString
+     * @return {boolean}
+     */keyboardEventMatchesKeys:function keyboardEventMatchesKeys(event,eventString){var keyCombos=parseEventString(eventString);for(var i=0;i<keyCombos.length;++i){if(keyComboMatchesEvent(keyCombos[i],event)){return true;}}return false;},_collectKeyBindings:function _collectKeyBindings(){var keyBindings=this.behaviors.map(function(behavior){return behavior.keyBindings;});if(keyBindings.indexOf(this.keyBindings)===-1){keyBindings.push(this.keyBindings);}return keyBindings;},_prepKeyBindings:function _prepKeyBindings(){this._keyBindings={};this._collectKeyBindings().forEach(function(keyBindings){for(var eventString in keyBindings){this._addKeyBinding(eventString,keyBindings[eventString]);}},this);for(var eventString in this._imperativeKeyBindings){this._addKeyBinding(eventString,this._imperativeKeyBindings[eventString]);}// Give precedence to combos with modifiers to be checked first.
 for(var eventName in this._keyBindings){this._keyBindings[eventName].sort(function(kb1,kb2){var b1=kb1[0].hasModifiers;var b2=kb2[0].hasModifiers;return b1===b2?0:b1?-1:1;});}},_addKeyBinding:function _addKeyBinding(eventString,handlerName){parseEventString(eventString).forEach(function(keyCombo){this._keyBindings[keyCombo.event]=this._keyBindings[keyCombo.event]||[];this._keyBindings[keyCombo.event].push([keyCombo,handlerName]);},this);},_resetKeyEventListeners:function _resetKeyEventListeners(){this._unlistenKeyEventListeners();if(this.isAttached){this._listenKeyEventListeners();}},_listenKeyEventListeners:function _listenKeyEventListeners(){if(!this.keyEventTarget){return;}Object.keys(this._keyBindings).forEach(function(eventName){var keyBindings=this._keyBindings[eventName];var boundKeyHandler=this._onKeyBindingEvent.bind(this,keyBindings);this._boundKeyHandlers.push([this.keyEventTarget,eventName,boundKeyHandler]);this.keyEventTarget.addEventListener(eventName,boundKeyHandler);},this);},_unlistenKeyEventListeners:function _unlistenKeyEventListeners(){var keyHandlerTuple;var keyEventTarget;var eventName;var boundKeyHandler;while(this._boundKeyHandlers.length){// My kingdom for block-scope binding and destructuring assignment..
 keyHandlerTuple=this._boundKeyHandlers.pop();keyEventTarget=keyHandlerTuple[0];eventName=keyHandlerTuple[1];boundKeyHandler=keyHandlerTuple[2];keyEventTarget.removeEventListener(eventName,boundKeyHandler);}},_onKeyBindingEvent:function _onKeyBindingEvent(keyBindings,event){if(this.stopKeyboardEventPropagation){event.stopPropagation();}// if event has been already prevented, don't do anything
 if(event.defaultPrevented){return;}for(var i=0;i<keyBindings.length;i++){var keyCombo=keyBindings[i][0];var handlerName=keyBindings[i][1];if(keyComboMatchesEvent(keyCombo,event)){this._triggerKeyHandler(keyCombo,handlerName,event);// exit the loop if eventDefault was prevented
@@ -6816,13 +6843,23 @@ if(event.defaultPrevented){return;}}}},_triggerKeyHandler:function _triggerKeyHa
        * If true, the element currently has focus.
        */focused:{type:Boolean,value:false,notify:true,readOnly:true,reflectToAttribute:true},/**
        * If true, the user cannot interact with this element.
-       */disabled:{type:Boolean,value:false,notify:true,observer:'_disabledChanged',reflectToAttribute:true},_oldTabIndex:{type:Number},_boundFocusBlurHandler:{type:Function,value:function value(){return this._focusBlurHandler.bind(this);}},__handleEventRetargeting:{type:Boolean,value:function value(){return!this.shadowRoot&&!Polymer.Element;}}},observers:['_changedControlState(focused, disabled)'],ready:function ready(){this.addEventListener('focus',this._boundFocusBlurHandler,true);this.addEventListener('blur',this._boundFocusBlurHandler,true);},_focusBlurHandler:function _focusBlurHandler(event){// In Polymer 2.0, the library takes care of retargeting events.
+       */disabled:{type:Boolean,value:false,notify:true,observer:'_disabledChanged',reflectToAttribute:true},/**
+       * Value of the `tabindex` attribute before `disabled` was activated.
+       * `null` means the attribute was not present.
+       * @type {?string|undefined}
+       */_oldTabIndex:{type:String},_boundFocusBlurHandler:{type:Function,value:function value(){return this._focusBlurHandler.bind(this);}},__handleEventRetargeting:{type:Boolean,value:function value(){return!this.shadowRoot&&!Polymer.Element;}}},observers:['_changedControlState(focused, disabled)'],/**
+     * @return {void}
+     */ready:function ready(){this.addEventListener('focus',this._boundFocusBlurHandler,true);this.addEventListener('blur',this._boundFocusBlurHandler,true);},_focusBlurHandler:function _focusBlurHandler(event){// In Polymer 2.0, the library takes care of retargeting events.
 if(Polymer.Element){this._setFocused(event.type==='focus');return;}// NOTE(cdata):  if we are in ShadowDOM land, `event.target` will
 // eventually become `this` due to retargeting; if we are not in
 // ShadowDOM land, `event.target` will eventually become `this` due
 // to the second conditional which fires a synthetic event (that is also
 // handled). In either case, we can disregard `event.path`.
-if(event.target===this){this._setFocused(event.type==='focus');}else if(this.__handleEventRetargeting){var target=/** @type {Node} */Polymer.dom(event).localTarget;if(!this.isLightDescendant(target)){this.fire(event.type,{sourceEvent:event},{node:this,bubbles:event.bubbles,cancelable:event.cancelable});}}},_disabledChanged:function _disabledChanged(disabled,old){this.setAttribute('aria-disabled',disabled?'true':'false');this.style.pointerEvents=disabled?'none':'';if(disabled){this._oldTabIndex=this.tabIndex;this._setFocused(false);this.tabIndex=-1;this.blur();}else if(this._oldTabIndex!==undefined){this.tabIndex=this._oldTabIndex;}},_changedControlState:function _changedControlState(){// _controlStateChanged is abstract, follow-on behaviors may implement it
+if(event.target===this){this._setFocused(event.type==='focus');}else if(this.__handleEventRetargeting){var target=/** @type {Node} */Polymer.dom(event).localTarget;if(!this.isLightDescendant(target)){this.fire(event.type,{sourceEvent:event},{node:this,bubbles:event.bubbles,cancelable:event.cancelable});}}},_disabledChanged:function _disabledChanged(disabled,old){this.setAttribute('aria-disabled',disabled?'true':'false');this.style.pointerEvents=disabled?'none':'';if(disabled){// Read the `tabindex` attribute instead of the `tabIndex` property.
+// The property returns `-1` if there is no `tabindex` attribute.
+// This distinction is important when restoring the value because
+// leaving `-1` hides shadow root children from the tab order.
+this._oldTabIndex=this.getAttribute('tabindex');this._setFocused(false);this.tabIndex=-1;this.blur();}else if(this._oldTabIndex!==undefined){if(this._oldTabIndex===null){this.removeAttribute('tabindex');}else{this.setAttribute('tabindex',this._oldTabIndex);}}},_changedControlState:function _changedControlState(){// _controlStateChanged is abstract, follow-on behaviors may implement it
 if(this._controlStateChanged){this._controlStateChanged();}}};/**
    * @demo demo/index.html
    * @polymerBehavior Polymer.IronButtonState
@@ -6843,7 +6880,9 @@ if(this._controlStateChanged){this._controlStateChanged();}}};/**
        */receivedFocusFromKeyboard:{type:Boolean,readOnly:true},/**
        * The aria attribute to be set if the button is a toggle and in the
        * active state.
-       */ariaActiveAttribute:{type:String,value:'aria-pressed',observer:'_ariaActiveAttributeChanged'}},listeners:{down:'_downHandler',up:'_upHandler',tap:'_tapHandler'},observers:['_focusChanged(focused)','_activeChanged(active, ariaActiveAttribute)'],keyBindings:{'enter:keydown':'_asyncClick','space:keydown':'_spaceKeyDownHandler','space:keyup':'_spaceKeyUpHandler'},_mouseEventRe:/^mouse/,_tapHandler:function _tapHandler(){if(this.toggles){// a tap is needed to toggle the active state
+       */ariaActiveAttribute:{type:String,value:'aria-pressed',observer:'_ariaActiveAttributeChanged'}},listeners:{down:'_downHandler',up:'_upHandler',tap:'_tapHandler'},observers:['_focusChanged(focused)','_activeChanged(active, ariaActiveAttribute)'],/**
+     * @type {!Object}
+     */keyBindings:{'enter:keydown':'_asyncClick','space:keydown':'_spaceKeyDownHandler','space:keyup':'_spaceKeyUpHandler'},_mouseEventRe:/^mouse/,_tapHandler:function _tapHandler(){if(this.toggles){// a tap is needed to toggle the active state
 this._userActivate(!this.active);}else{this.active=false;}},_focusChanged:function _focusChanged(focused){this._detectKeyboardFocus(focused);if(!focused){this._setPressed(false);}},_detectKeyboardFocus:function _detectKeyboardFocus(focused){this._setReceivedFocusFromKeyboard(!this.pointerDown&&focused);},// to emulate native checkbox, (de-)activations from a user interaction fire
 // 'change' events
 _userActivate:function _userActivate(active){if(this.active!==active){this.active=active;this.fire('change');}},_downHandler:function _downHandler(event){this._setPointerDown(true);this._setPressed(true);this._setReceivedFocusFromKeyboard(false);},_upHandler:function _upHandler(){this._setPointerDown(false);this._setPressed(false);},/**
@@ -6860,92 +6899,94 @@ _asyncClick:function _asyncClick(){this.async(function(){this.click();},1);},// 
 _pressedChanged:function _pressedChanged(pressed){this._changedButtonState();},_ariaActiveAttributeChanged:function _ariaActiveAttributeChanged(value,oldValue){if(oldValue&&oldValue!=value&&this.hasAttribute(oldValue)){this.removeAttribute(oldValue);}},_activeChanged:function _activeChanged(active,ariaActiveAttribute){if(this.toggles){this.setAttribute(this.ariaActiveAttribute,active?'true':'false');}else{this.removeAttribute(this.ariaActiveAttribute);}this._changedButtonState();},_controlStateChanged:function _controlStateChanged(){if(this.disabled){this._setPressed(false);}else{this._changedButtonState();}},// provide hook for follow-on behaviors to react to button-state
 _changedButtonState:function _changedButtonState(){if(this._buttonStateChanged){this._buttonStateChanged();// abstract
 }}};/** @polymerBehavior */Polymer.IronButtonState=[Polymer.IronA11yKeysBehavior,Polymer.IronButtonStateImpl];/** @polymerBehavior Polymer.PaperItemBehavior */Polymer.PaperItemBehaviorImpl={hostAttributes:{role:'option',tabindex:'0'}};/** @polymerBehavior */Polymer.PaperItemBehavior=[Polymer.IronButtonState,Polymer.IronControlState,Polymer.PaperItemBehaviorImpl];Polymer({is:'paper-item',behaviors:[Polymer.PaperItemBehavior]});var ExampleOrder=function(_Polymer$Element2){_inherits(ExampleOrder,_Polymer$Element2);function ExampleOrder(){_classCallCheck(this,ExampleOrder);return _possibleConstructorReturn(this,(ExampleOrder.__proto__||Object.getPrototypeOf(ExampleOrder)).apply(this,arguments));}_createClass(ExampleOrder,[{key:'_selectItem',value:function _selectItem(e){this.$.selector.selectIndex(e.model.index);}},{key:'getData',value:function getData(){var _this38=this;var root=window.location.origin;root+=window.location.pathname.replace("index.html","");fetch(root+"data/exampleOrders.json").then(function(stream){return stream.body.getReader().read();}).then(function(_ref){var value=_ref.value,done=_ref.done;return _this38.parse(value);}).then(function(orders){_this38.orderTypes=Array.from(orders.keys());_this38.orders=Array.from(orders.values());_this38.selectedOrder=_this38.orders[0];});}},{key:'parse',value:function parse(value){var string=value.reduce(function(acc,code){return acc+=String.fromCharCode(code);},"");var json=JSON.parse(string);var ret=new Map();for(var orderType in json){var order=json[orderType];ret.set(orderType,order);}return ret;}},{key:'ready',value:function ready(){_get(ExampleOrder.prototype.__proto__||Object.getPrototypeOf(ExampleOrder.prototype),'ready',this).call(this);this.getData();}}],[{key:'is',get:function get(){return"example-order";}},{key:'properties',get:function get(){return{orders:Array,selectedOrder:Array,orderTypes:Array};}}]);return ExampleOrder;}(Polymer.Element);window.customElements.define(ExampleOrder.is,ExampleOrder);(function(){'use strict';var Utility={distance:function distance(x1,y1,x2,y2){var xDelta=x1-x2;var yDelta=y1-y2;return Math.sqrt(xDelta*xDelta+yDelta*yDelta);},now:window.performance&&window.performance.now?window.performance.now.bind(window.performance):Date.now};/**
-     * @param {HTMLElement} element
-     * @constructor
-     */function ElementMetrics(element){this.element=element;this.width=this.boundingRect.width;this.height=this.boundingRect.height;this.size=Math.max(this.width,this.height);}ElementMetrics.prototype={get boundingRect(){return this.element.getBoundingClientRect();},furthestCornerDistanceFrom:function furthestCornerDistanceFrom(x,y){var topLeft=Utility.distance(x,y,0,0);var topRight=Utility.distance(x,y,this.width,0);var bottomLeft=Utility.distance(x,y,0,this.height);var bottomRight=Utility.distance(x,y,this.width,this.height);return Math.max(topLeft,topRight,bottomLeft,bottomRight);}};/**
-     * @param {HTMLElement} element
-     * @constructor
-     */function Ripple(element){this.element=element;this.color=window.getComputedStyle(element).color;this.wave=document.createElement('div');this.waveContainer=document.createElement('div');this.wave.style.backgroundColor=this.color;this.wave.classList.add('wave');this.waveContainer.classList.add('wave-container');Polymer.dom(this.waveContainer).appendChild(this.wave);this.resetInteractionState();}Ripple.MAX_RADIUS=300;Ripple.prototype={get recenters(){return this.element.recenters;},get center(){return this.element.center;},get mouseDownElapsed(){var elapsed;if(!this.mouseDownStart){return 0;}elapsed=Utility.now()-this.mouseDownStart;if(this.mouseUpStart){elapsed-=this.mouseUpElapsed;}return elapsed;},get mouseUpElapsed(){return this.mouseUpStart?Utility.now()-this.mouseUpStart:0;},get mouseDownElapsedSeconds(){return this.mouseDownElapsed/1000;},get mouseUpElapsedSeconds(){return this.mouseUpElapsed/1000;},get mouseInteractionSeconds(){return this.mouseDownElapsedSeconds+this.mouseUpElapsedSeconds;},get initialOpacity(){return this.element.initialOpacity;},get opacityDecayVelocity(){return this.element.opacityDecayVelocity;},get radius(){var width2=this.containerMetrics.width*this.containerMetrics.width;var height2=this.containerMetrics.height*this.containerMetrics.height;var waveRadius=Math.min(Math.sqrt(width2+height2),Ripple.MAX_RADIUS)*1.1+5;var duration=1.1-0.2*(waveRadius/Ripple.MAX_RADIUS);var timeNow=this.mouseInteractionSeconds/duration;var size=waveRadius*(1-Math.pow(80,-timeNow));return Math.abs(size);},get opacity(){if(!this.mouseUpStart){return this.initialOpacity;}return Math.max(0,this.initialOpacity-this.mouseUpElapsedSeconds*this.opacityDecayVelocity);},get outerOpacity(){// Linear increase in background opacity, capped at the opacity
+   * @param {HTMLElement} element
+   * @constructor
+   */function ElementMetrics(element){this.element=element;this.width=this.boundingRect.width;this.height=this.boundingRect.height;this.size=Math.max(this.width,this.height);}ElementMetrics.prototype={get boundingRect(){return this.element.getBoundingClientRect();},furthestCornerDistanceFrom:function furthestCornerDistanceFrom(x,y){var topLeft=Utility.distance(x,y,0,0);var topRight=Utility.distance(x,y,this.width,0);var bottomLeft=Utility.distance(x,y,0,this.height);var bottomRight=Utility.distance(x,y,this.width,this.height);return Math.max(topLeft,topRight,bottomLeft,bottomRight);}};/**
+   * @param {HTMLElement} element
+   * @constructor
+   */function Ripple(element){this.element=element;this.color=window.getComputedStyle(element).color;this.wave=document.createElement('div');this.waveContainer=document.createElement('div');this.wave.style.backgroundColor=this.color;this.wave.classList.add('wave');this.waveContainer.classList.add('wave-container');Polymer.dom(this.waveContainer).appendChild(this.wave);this.resetInteractionState();}Ripple.MAX_RADIUS=300;Ripple.prototype={get recenters(){return this.element.recenters;},get center(){return this.element.center;},get mouseDownElapsed(){var elapsed;if(!this.mouseDownStart){return 0;}elapsed=Utility.now()-this.mouseDownStart;if(this.mouseUpStart){elapsed-=this.mouseUpElapsed;}return elapsed;},get mouseUpElapsed(){return this.mouseUpStart?Utility.now()-this.mouseUpStart:0;},get mouseDownElapsedSeconds(){return this.mouseDownElapsed/1000;},get mouseUpElapsedSeconds(){return this.mouseUpElapsed/1000;},get mouseInteractionSeconds(){return this.mouseDownElapsedSeconds+this.mouseUpElapsedSeconds;},get initialOpacity(){return this.element.initialOpacity;},get opacityDecayVelocity(){return this.element.opacityDecayVelocity;},get radius(){var width2=this.containerMetrics.width*this.containerMetrics.width;var height2=this.containerMetrics.height*this.containerMetrics.height;var waveRadius=Math.min(Math.sqrt(width2+height2),Ripple.MAX_RADIUS)*1.1+5;var duration=1.1-0.2*(waveRadius/Ripple.MAX_RADIUS);var timeNow=this.mouseInteractionSeconds/duration;var size=waveRadius*(1-Math.pow(80,-timeNow));return Math.abs(size);},get opacity(){if(!this.mouseUpStart){return this.initialOpacity;}return Math.max(0,this.initialOpacity-this.mouseUpElapsedSeconds*this.opacityDecayVelocity);},get outerOpacity(){// Linear increase in background opacity, capped at the opacity
 // of the wavefront (waveOpacity).
-var outerOpacity=this.mouseUpElapsedSeconds*0.3;var waveOpacity=this.opacity;return Math.max(0,Math.min(outerOpacity,waveOpacity));},get isOpacityFullyDecayed(){return this.opacity<0.01&&this.radius>=Math.min(this.maxRadius,Ripple.MAX_RADIUS);},get isRestingAtMaxRadius(){return this.opacity>=this.initialOpacity&&this.radius>=Math.min(this.maxRadius,Ripple.MAX_RADIUS);},get isAnimationComplete(){return this.mouseUpStart?this.isOpacityFullyDecayed:this.isRestingAtMaxRadius;},get translationFraction(){return Math.min(1,this.radius/this.containerMetrics.size*2/Math.sqrt(2));},get xNow(){if(this.xEnd){return this.xStart+this.translationFraction*(this.xEnd-this.xStart);}return this.xStart;},get yNow(){if(this.yEnd){return this.yStart+this.translationFraction*(this.yEnd-this.yStart);}return this.yStart;},get isMouseDown(){return this.mouseDownStart&&!this.mouseUpStart;},resetInteractionState:function resetInteractionState(){this.maxRadius=0;this.mouseDownStart=0;this.mouseUpStart=0;this.xStart=0;this.yStart=0;this.xEnd=0;this.yEnd=0;this.slideDistance=0;this.containerMetrics=new ElementMetrics(this.element);},draw:function draw(){var scale;var translateString;var dx;var dy;this.wave.style.opacity=this.opacity;scale=this.radius/(this.containerMetrics.size/2);dx=this.xNow-this.containerMetrics.width/2;dy=this.yNow-this.containerMetrics.height/2;// 2d transform for safari because of border-radius and overflow:hidden clipping bug.
-// https://bugs.webkit.org/show_bug.cgi?id=98538
+var outerOpacity=this.mouseUpElapsedSeconds*0.3;var waveOpacity=this.opacity;return Math.max(0,Math.min(outerOpacity,waveOpacity));},get isOpacityFullyDecayed(){return this.opacity<0.01&&this.radius>=Math.min(this.maxRadius,Ripple.MAX_RADIUS);},get isRestingAtMaxRadius(){return this.opacity>=this.initialOpacity&&this.radius>=Math.min(this.maxRadius,Ripple.MAX_RADIUS);},get isAnimationComplete(){return this.mouseUpStart?this.isOpacityFullyDecayed:this.isRestingAtMaxRadius;},get translationFraction(){return Math.min(1,this.radius/this.containerMetrics.size*2/Math.sqrt(2));},get xNow(){if(this.xEnd){return this.xStart+this.translationFraction*(this.xEnd-this.xStart);}return this.xStart;},get yNow(){if(this.yEnd){return this.yStart+this.translationFraction*(this.yEnd-this.yStart);}return this.yStart;},get isMouseDown(){return this.mouseDownStart&&!this.mouseUpStart;},resetInteractionState:function resetInteractionState(){this.maxRadius=0;this.mouseDownStart=0;this.mouseUpStart=0;this.xStart=0;this.yStart=0;this.xEnd=0;this.yEnd=0;this.slideDistance=0;this.containerMetrics=new ElementMetrics(this.element);},draw:function draw(){var scale;var dx;var dy;this.wave.style.opacity=this.opacity;scale=this.radius/(this.containerMetrics.size/2);dx=this.xNow-this.containerMetrics.width/2;dy=this.yNow-this.containerMetrics.height/2;// 2d transform for safari because of border-radius and overflow:hidden
+// clipping bug. https://bugs.webkit.org/show_bug.cgi?id=98538
 this.waveContainer.style.webkitTransform='translate('+dx+'px, '+dy+'px)';this.waveContainer.style.transform='translate3d('+dx+'px, '+dy+'px, 0)';this.wave.style.webkitTransform='scale('+scale+','+scale+')';this.wave.style.transform='scale3d('+scale+','+scale+',1)';},/** @param {Event=} event */downAction:function downAction(event){var xCenter=this.containerMetrics.width/2;var yCenter=this.containerMetrics.height/2;this.resetInteractionState();this.mouseDownStart=Utility.now();if(this.center){this.xStart=xCenter;this.yStart=yCenter;this.slideDistance=Utility.distance(this.xStart,this.yStart,this.xEnd,this.yEnd);}else{this.xStart=event?event.detail.x-this.containerMetrics.boundingRect.left:this.containerMetrics.width/2;this.yStart=event?event.detail.y-this.containerMetrics.boundingRect.top:this.containerMetrics.height/2;}if(this.recenters){this.xEnd=xCenter;this.yEnd=yCenter;this.slideDistance=Utility.distance(this.xStart,this.yStart,this.xEnd,this.yEnd);}this.maxRadius=this.containerMetrics.furthestCornerDistanceFrom(this.xStart,this.yStart);this.waveContainer.style.top=(this.containerMetrics.height-this.containerMetrics.size)/2+'px';this.waveContainer.style.left=(this.containerMetrics.width-this.containerMetrics.size)/2+'px';this.waveContainer.style.width=this.containerMetrics.size+'px';this.waveContainer.style.height=this.containerMetrics.size+'px';},/** @param {Event=} event */upAction:function upAction(event){if(!this.isMouseDown){return;}this.mouseUpStart=Utility.now();},remove:function remove(){Polymer.dom(this.waveContainer.parentNode).removeChild(this.waveContainer);}};Polymer({is:'paper-ripple',behaviors:[Polymer.IronA11yKeysBehavior],properties:{/**
-         * The initial opacity set on the wave.
-         *
-         * @attribute initialOpacity
-         * @type number
-         * @default 0.25
-         */initialOpacity:{type:Number,value:0.25},/**
-         * How fast (opacity per second) the wave fades out.
-         *
-         * @attribute opacityDecayVelocity
-         * @type number
-         * @default 0.8
-         */opacityDecayVelocity:{type:Number,value:0.8},/**
-         * If true, ripples will exhibit a gravitational pull towards
-         * the center of their container as they fade away.
-         *
-         * @attribute recenters
-         * @type boolean
-         * @default false
-         */recenters:{type:Boolean,value:false},/**
-         * If true, ripples will center inside its container
-         *
-         * @attribute recenters
-         * @type boolean
-         * @default false
-         */center:{type:Boolean,value:false},/**
-         * A list of the visual ripples.
-         *
-         * @attribute ripples
-         * @type Array
-         * @default []
-         */ripples:{type:Array,value:function value(){return[];}},/**
-         * True when there are visible ripples animating within the
-         * element.
-         */animating:{type:Boolean,readOnly:true,reflectToAttribute:true,value:false},/**
-         * If true, the ripple will remain in the "down" state until `holdDown`
-         * is set to false again.
-         */holdDown:{type:Boolean,value:false,observer:'_holdDownChanged'},/**
-         * If true, the ripple will not generate a ripple effect
-         * via pointer interaction.
-         * Calling ripple's imperative api like `simulatedRipple` will
-         * still generate the ripple effect.
-         */noink:{type:Boolean,value:false},_animating:{type:Boolean},_boundAnimate:{type:Function,value:function value(){return this.animate.bind(this);}}},get target(){return this.keyEventTarget;},keyBindings:{'enter:keydown':'_onEnterKeydown','space:keydown':'_onSpaceKeydown','space:keyup':'_onSpaceKeyup'},attached:function attached(){// Set up a11yKeysBehavior to listen to key events on the target,
+       * The initial opacity set on the wave.
+       *
+       * @attribute initialOpacity
+       * @type number
+       * @default 0.25
+       */initialOpacity:{type:Number,value:0.25},/**
+       * How fast (opacity per second) the wave fades out.
+       *
+       * @attribute opacityDecayVelocity
+       * @type number
+       * @default 0.8
+       */opacityDecayVelocity:{type:Number,value:0.8},/**
+       * If true, ripples will exhibit a gravitational pull towards
+       * the center of their container as they fade away.
+       *
+       * @attribute recenters
+       * @type boolean
+       * @default false
+       */recenters:{type:Boolean,value:false},/**
+       * If true, ripples will center inside its container
+       *
+       * @attribute recenters
+       * @type boolean
+       * @default false
+       */center:{type:Boolean,value:false},/**
+       * A list of the visual ripples.
+       *
+       * @attribute ripples
+       * @type Array
+       * @default []
+       */ripples:{type:Array,value:function value(){return[];}},/**
+       * True when there are visible ripples animating within the
+       * element.
+       */animating:{type:Boolean,readOnly:true,reflectToAttribute:true,value:false},/**
+       * If true, the ripple will remain in the "down" state until `holdDown`
+       * is set to false again.
+       */holdDown:{type:Boolean,value:false,observer:'_holdDownChanged'},/**
+       * If true, the ripple will not generate a ripple effect
+       * via pointer interaction.
+       * Calling ripple's imperative api like `simulatedRipple` will
+       * still generate the ripple effect.
+       */noink:{type:Boolean,value:false},_animating:{type:Boolean},_boundAnimate:{type:Function,value:function value(){return this.animate.bind(this);}}},get target(){return this.keyEventTarget;},/**
+     * @type {!Object}
+     */keyBindings:{'enter:keydown':'_onEnterKeydown','space:keydown':'_onSpaceKeydown','space:keyup':'_onSpaceKeyup'},attached:function attached(){// Set up a11yKeysBehavior to listen to key events on the target,
 // so that space and enter activate the ripple even if the target doesn't
 // handle key events. The key handlers deal with `noink` themselves.
 if(this.parentNode.nodeType==11){// DOCUMENT_FRAGMENT_NODE
 this.keyEventTarget=Polymer.dom(this).getOwnerRoot().host;}else{this.keyEventTarget=this.parentNode;}var keyEventTarget=/** @type {!EventTarget} */this.keyEventTarget;this.listen(keyEventTarget,'up','uiUpAction');this.listen(keyEventTarget,'down','uiDownAction');},detached:function detached(){this.unlisten(this.keyEventTarget,'up','uiUpAction');this.unlisten(this.keyEventTarget,'down','uiDownAction');this.keyEventTarget=null;},get shouldKeepAnimating(){for(var index=0;index<this.ripples.length;++index){if(!this.ripples[index].isAnimationComplete){return true;}}return false;},simulatedRipple:function simulatedRipple(){this.downAction(null);// Please see polymer/polymer#1305
 this.async(function(){this.upAction();},1);},/**
-       * Provokes a ripple down effect via a UI event,
-       * respecting the `noink` property.
-       * @param {Event=} event
-       */uiDownAction:function uiDownAction(event){if(!this.noink){this.downAction(event);}},/**
-       * Provokes a ripple down effect via a UI event,
-       * *not* respecting the `noink` property.
-       * @param {Event=} event
-       */downAction:function downAction(event){if(this.holdDown&&this.ripples.length>0){return;}var ripple=this.addRipple();ripple.downAction(event);if(!this._animating){this._animating=true;this.animate();}},/**
-       * Provokes a ripple up effect via a UI event,
-       * respecting the `noink` property.
-       * @param {Event=} event
-       */uiUpAction:function uiUpAction(event){if(!this.noink){this.upAction(event);}},/**
-       * Provokes a ripple up effect via a UI event,
-       * *not* respecting the `noink` property.
-       * @param {Event=} event
-       */upAction:function upAction(event){if(this.holdDown){return;}this.ripples.forEach(function(ripple){ripple.upAction(event);});this._animating=true;this.animate();},onAnimationComplete:function onAnimationComplete(){this._animating=false;this.$.background.style.backgroundColor=null;this.fire('transitionend');},addRipple:function addRipple(){var ripple=new Ripple(this);Polymer.dom(this.$.waves).appendChild(ripple.waveContainer);this.$.background.style.backgroundColor=ripple.color;this.ripples.push(ripple);this._setAnimating(true);return ripple;},removeRipple:function removeRipple(ripple){var rippleIndex=this.ripples.indexOf(ripple);if(rippleIndex<0){return;}this.ripples.splice(rippleIndex,1);ripple.remove();if(!this.ripples.length){this._setAnimating(false);}},/**
-       * This conflicts with Element#antimate().
-       * https://developer.mozilla.org/en-US/docs/Web/API/Element/animate
-       * @suppress {checkTypes}
-       */animate:function animate(){if(!this._animating){return;}var index;var ripple;for(index=0;index<this.ripples.length;++index){ripple=this.ripples[index];ripple.draw();this.$.background.style.opacity=ripple.outerOpacity;if(ripple.isOpacityFullyDecayed&&!ripple.isRestingAtMaxRadius){this.removeRipple(ripple);}}if(!this.shouldKeepAnimating&&this.ripples.length===0){this.onAnimationComplete();}else{window.requestAnimationFrame(this._boundAnimate);}},_onEnterKeydown:function _onEnterKeydown(){this.uiDownAction();this.async(this.uiUpAction,1);},_onSpaceKeydown:function _onSpaceKeydown(){this.uiDownAction();},_onSpaceKeyup:function _onSpaceKeyup(){this.uiUpAction();},// note: holdDown does not respect noink since it can be a focus based
+     * Provokes a ripple down effect via a UI event,
+     * respecting the `noink` property.
+     * @param {Event=} event
+     */uiDownAction:function uiDownAction(event){if(!this.noink){this.downAction(event);}},/**
+     * Provokes a ripple down effect via a UI event,
+     * *not* respecting the `noink` property.
+     * @param {Event=} event
+     */downAction:function downAction(event){if(this.holdDown&&this.ripples.length>0){return;}var ripple=this.addRipple();ripple.downAction(event);if(!this._animating){this._animating=true;this.animate();}},/**
+     * Provokes a ripple up effect via a UI event,
+     * respecting the `noink` property.
+     * @param {Event=} event
+     */uiUpAction:function uiUpAction(event){if(!this.noink){this.upAction(event);}},/**
+     * Provokes a ripple up effect via a UI event,
+     * *not* respecting the `noink` property.
+     * @param {Event=} event
+     */upAction:function upAction(event){if(this.holdDown){return;}this.ripples.forEach(function(ripple){ripple.upAction(event);});this._animating=true;this.animate();},onAnimationComplete:function onAnimationComplete(){this._animating=false;this.$.background.style.backgroundColor=null;this.fire('transitionend');},addRipple:function addRipple(){var ripple=new Ripple(this);Polymer.dom(this.$.waves).appendChild(ripple.waveContainer);this.$.background.style.backgroundColor=ripple.color;this.ripples.push(ripple);this._setAnimating(true);return ripple;},removeRipple:function removeRipple(ripple){var rippleIndex=this.ripples.indexOf(ripple);if(rippleIndex<0){return;}this.ripples.splice(rippleIndex,1);ripple.remove();if(!this.ripples.length){this._setAnimating(false);}},/**
+     * This conflicts with Element#antimate().
+     * https://developer.mozilla.org/en-US/docs/Web/API/Element/animate
+     * @suppress {checkTypes}
+     */animate:function animate(){if(!this._animating){return;}var index;var ripple;for(index=0;index<this.ripples.length;++index){ripple=this.ripples[index];ripple.draw();this.$.background.style.opacity=ripple.outerOpacity;if(ripple.isOpacityFullyDecayed&&!ripple.isRestingAtMaxRadius){this.removeRipple(ripple);}}if(!this.shouldKeepAnimating&&this.ripples.length===0){this.onAnimationComplete();}else{window.requestAnimationFrame(this._boundAnimate);}},_onEnterKeydown:function _onEnterKeydown(){this.uiDownAction();this.async(this.uiUpAction,1);},_onSpaceKeydown:function _onSpaceKeydown(){this.uiDownAction();},_onSpaceKeyup:function _onSpaceKeyup(){this.uiUpAction();},// note: holdDown does not respect noink since it can be a focus based
 // effect.
 _holdDownChanged:function _holdDownChanged(newVal,oldVal){if(oldVal===undefined){return;}if(newVal){this.downAction();}else{this.upAction();}}/**
-      Fired when the animation finishes.
-      This is useful if you want to wait until
-      the ripple animation finishes to perform some action.
+    Fired when the animation finishes.
+    This is useful if you want to wait until
+    the ripple animation finishes to perform some action.
 
-      @event transitionend
-      @param {{node: Object}} detail Contains the animated node.
-      */});})();/**
+    @event transitionend
+    @param {{node: Object}} detail Contains the animated node.
+    */});})();/**
    * `Polymer.PaperRippleBehavior` dynamically implements a ripple
    * when the element has focus via pointer or keyboard.
    *
@@ -6984,7 +7025,7 @@ var domContainer=Polymer.dom(this._rippleContainer||this);var target=Polymer.dom
      * Create the element's ripple effect via creating a `<paper-ripple>`.
      * Override this method to customize the ripple element.
      * @return {!PaperRippleElement} Returns a `<paper-ripple>` element.
-     */_createRipple:function _createRipple(){return(/** @type {!PaperRippleElement} */document.createElement('paper-ripple'));},_noinkChanged:function _noinkChanged(noink){if(this.hasRipple()){this._ripple.noink=noink;}}};/** @polymerBehavior Polymer.PaperButtonBehavior */Polymer.PaperButtonBehaviorImpl={properties:{/**
+     */_createRipple:function _createRipple(){var element=/** @type {!PaperRippleElement} */document.createElement('paper-ripple');return element;},_noinkChanged:function _noinkChanged(noink){if(this.hasRipple()){this._ripple.noink=noink;}}};/** @polymerBehavior Polymer.PaperButtonBehavior */Polymer.PaperButtonBehaviorImpl={properties:{/**
        * The z-depth of this element, from 0-5. Setting to 0 will remove the
        * shadow, and each increasing number greater than 0 will be "deeper"
        * than the last.
@@ -7012,22 +7053,36 @@ if(this.hasRipple()&&this.getRipple().ripples.length<1){this._ripple.uiDownActio
 
       @event transitionend
       Event param: {{node: Object}} detail Contains the animated node.
-      */});(function(){function IronMeta(options){this.type=options&&options.type||'default';this.key=options&&options.key;if('value'in options){this.value=options.value;}}IronMeta.types={};IronMeta.prototype={get value(){var type=this.type;var key=this.key;if(type&&key){return IronMeta.types[type]&&IronMeta.types[type][key];}},set value(value){var type=this.type;var key=this.key;if(type&&key){var type=IronMeta.types[type]=IronMeta.types[type]||{};if(value==null){delete type[key];}else{type[key]=value;}}},get list(){var type=this.type;if(type){return Object.keys(IronMeta.types[this.type]).map(function(key){return metaDatas[this.type][key];},this);}},byKey:function byKey(key){this.key=key;return this.value;}};Polymer.IronMeta=IronMeta;var metaDatas=Polymer.IronMeta.types;Polymer({is:'iron-meta',properties:{/**
-         * The type of meta-data.  All meta-data of the same type is stored
-         * together.
-         */type:{type:String,value:'default'},/**
-         * The key used to store `value` under the `type` namespace.
-         */key:{type:String},/**
-         * The meta-data to store or retrieve.
-         */value:{type:String,notify:true},/**
-         * If true, `value` is set to the iron-meta instance itself.
-         */self:{type:Boolean,observer:'_selfChanged'},__meta:{type:Boolean,computed:'__computeMeta(type, key, value)'}},hostAttributes:{hidden:true},__computeMeta:function __computeMeta(type,key,value){var meta=new Polymer.IronMeta({type:type,key:key});if(value!==undefined&&value!==meta.value){meta.value=value;}else if(this.value!==meta.value){this.value=meta.value;}return meta;},get list(){return this.__meta&&this.__meta.list;},_selfChanged:function _selfChanged(self){if(self){this.value=this;}},/**
-       * Retrieves meta data value by key.
-       *
-       * @method byKey
-       * @param {string} key The key of the meta-data to be returned.
-       * @return {*}
-       */byKey:function byKey(key){return new Polymer.IronMeta({type:this.type,key:key}).value;}});})();/**
+      */});(function(){/**
+   * @constructor
+   * @param {{
+   *   type: (string|null|undefined),
+   *   key: (string|null|undefined),
+   *   value: *,
+   * }=} options
+   */Polymer.IronMeta=function(options){Polymer.IronMeta[' '](options);this.type=options&&options.type||'default';this.key=options&&options.key;if(options&&'value'in options){this.value=options.value;}};// This function is used to convince Closure not to remove constructor calls
+// for instances that are not held anywhere. For example, when
+// `new Polymer.IronMeta({...})` is used only for the side effect of adding
+// a value.
+Polymer.IronMeta[' ']=function(){};Polymer.IronMeta.types={};Polymer.IronMeta.prototype={get value(){var type=this.type;var key=this.key;if(type&&key){return Polymer.IronMeta.types[type]&&Polymer.IronMeta.types[type][key];}},set value(value){var type=this.type;var key=this.key;if(type&&key){type=Polymer.IronMeta.types[type]=Polymer.IronMeta.types[type]||{};if(value==null){delete type[key];}else{type[key]=value;}}},get list(){var type=this.type;if(type){var items=Polymer.IronMeta.types[this.type];if(!items){return[];}return Object.keys(items).map(function(key){return metaDatas[this.type][key];},this);}},byKey:function byKey(key){this.key=key;return this.value;}};var metaDatas=Polymer.IronMeta.types;Polymer({is:'iron-meta',properties:{/**
+       * The type of meta-data.  All meta-data of the same type is stored
+       * together.
+       * @type {string}
+       */type:{type:String,value:'default'},/**
+       * The key used to store `value` under the `type` namespace.
+       * @type {?string}
+       */key:{type:String},/**
+       * The meta-data to store or retrieve.
+       * @type {*}
+       */value:{type:String,notify:true},/**
+       * If true, `value` is set to the iron-meta instance itself.
+       */self:{type:Boolean,observer:'_selfChanged'},__meta:{type:Boolean,computed:'__computeMeta(type, key, value)'}},hostAttributes:{hidden:true},__computeMeta:function __computeMeta(type,key,value){var meta=new Polymer.IronMeta({type:type,key:key});if(value!==undefined&&value!==meta.value){meta.value=value;}else if(this.value!==meta.value){this.value=meta.value;}return meta;},get list(){return this.__meta&&this.__meta.list;},_selfChanged:function _selfChanged(self){if(self){this.value=this;}},/**
+     * Retrieves meta data value by key.
+     *
+     * @method byKey
+     * @param {string} key The key of the meta-data to be returned.
+     * @return {*}
+     */byKey:function byKey(key){return new Polymer.IronMeta({type:this.type,key:key}).value;}});})();/**
    * Singleton IronMeta instance.
    */Polymer.IronValidatableBehaviorMeta=null;/**
    * `Use Polymer.IronValidatableBehavior` to implement an element that validates user input.
@@ -7083,7 +7138,8 @@ if(value===undefined&&this.value!==undefined)this.invalid=!this._getValidity(thi
   Polymer.IronFormElementBehavior enables a custom element to be included
   in an `iron-form`.
 
-  Events `iron-form-element-register` and `iron-form-element-unregister` are not fired on Polymer 2.0.
+  Events `iron-form-element-register` and `iron-form-element-unregister` are not
+  fired on Polymer 2.0.
 
   @demo demo/index.html
   @polymerBehavior
@@ -7099,6 +7155,7 @@ if(value===undefined&&this.value!==undefined)this.invalid=!this._getValidity(thi
        * The name of this element.
        */name:{type:String},/**
        * The value for this element.
+       * @type {*}
        */value:{notify:true,type:String},/**
        * Set to true to mark the input as required. If used in a form, a
        * custom element that uses this behavior should also use
@@ -7108,9 +7165,9 @@ if(value===undefined&&this.value!==undefined)this.invalid=!this._getValidity(thi
        * when its value is invalid.
        */required:{type:Boolean,value:false},/**
        * The form that the element is registered to.
-       */_parentForm:{type:Object}},attached:Polymer.Element?null:function(){// Note: the iron-form that this element belongs to will set this
+       */_parentForm:{type:Object}},attached:function attached(){if(!Polymer.Element){// Note: the iron-form that this element belongs to will set this
 // element's _parentForm property when handling this event.
-this.fire('iron-form-element-register');},detached:Polymer.Element?null:function(){if(this._parentForm){this._parentForm.fire('iron-form-element-unregister',{target:this});}}};/**
+this.fire('iron-form-element-register');}},detached:function detached(){if(!Polymer.Element&&this._parentForm){this._parentForm.fire('iron-form-element-unregister',{target:this});}}};/**
    * Use `Polymer.IronCheckedElementBehavior` to implement a custom element
    * that has a `checked` property, which can be used for validation if the
    * element is also `required`. Element instances implementing this behavior
@@ -7131,7 +7188,8 @@ this.fire('iron-form-element-register');},detached:Polymer.Element?null:function
 // doesn't have a role of 'checkbox' or 'radio', but should still only be
 // included when the form is serialized if `this.checked === true`.
 this._hasIronCheckedElementBehavior=true;},/**
-     * Returns false if the element is required and not checked, and true otherwise.
+     * Returns false if the element is required and not checked, and true
+     * otherwise.
      * @param {*=} _value Ignored.
      * @return {boolean} true if `required` is false or if `checked` is true.
      */_getValidity:function _getValidity(_value){return this.disabled||!this.required||this.checked;},/**
@@ -7141,7 +7199,8 @@ this._hasIronCheckedElementBehavior=true;},/**
      */_checkedChanged:function _checkedChanged(){this.active=this.checked;this.fire('iron-change');},/**
      * Reset value to 'on' if it is set to `undefined`.
      */_valueChanged:function _valueChanged(){if(this.value===undefined||this.value===null){this.value='on';}}};/** @polymerBehavior Polymer.IronCheckedElementBehavior */Polymer.IronCheckedElementBehavior=[Polymer.IronFormElementBehavior,Polymer.IronValidatableBehavior,Polymer.IronCheckedElementBehaviorImpl];/**
-   * `Polymer.PaperInkyFocusBehavior` implements a ripple when the element has keyboard focus.
+   * `Polymer.PaperInkyFocusBehavior` implements a ripple when the element has
+   * keyboard focus.
    *
    * @polymerBehavior Polymer.PaperInkyFocusBehavior
    */Polymer.PaperInkyFocusBehaviorImpl={observers:['_focusedChanged(receivedFocusFromKeyboard)'],_focusedChanged:function _focusedChanged(receivedFocusFromKeyboard){if(receivedFocusFromKeyboard){this.ensureRipple();}if(this.hasRipple()){this._ripple.holdDown=receivedFocusFromKeyboard;}},_createRipple:function _createRipple(){var ripple=Polymer.PaperRippleBehavior._createRipple();ripple.id='ink';ripple.setAttribute('center','');ripple.classList.add('circle');return ripple;}};/** @polymerBehavior Polymer.PaperInkyFocusBehavior */Polymer.PaperInkyFocusBehavior=[Polymer.IronButtonState,Polymer.IronControlState,Polymer.PaperRippleBehavior,Polymer.PaperInkyFocusBehaviorImpl];/**
@@ -7183,21 +7242,23 @@ _createRipple:function _createRipple(){this._rippleContainer=this.$.checkboxCont
          * Use this property instead of `value` for two-way data binding, or to
          * set a default value for the input. **Do not** use the distributed
          * input's `value` property to set a default value.
-         */bindValue:{type:String},/**
+         */bindValue:{type:String,value:''},/**
          * Computed property that echoes `bindValue` (mostly used for Polymer 1.0
          * backcompatibility, if you were one-way binding to the Polymer 1.0
          * `input is="iron-input"` value attribute).
-         */value:{computed:'_computeValue(bindValue)'},/**
-         * Regex-like list of characters allowed as input; all characters not in the list
-         * will be rejected. The recommended format should be a list of allowed characters,
-         * for example, `[a-zA-Z0-9.+-!;:]`.
+         */value:{type:String,computed:'_computeValue(bindValue)'},/**
+         * Regex-like list of characters allowed as input; all characters not in the
+         * list will be rejected. The recommended format should be a list of allowed
+         * characters, for example, `[a-zA-Z0-9.+-!;:]`.
          *
-         * This pattern represents the allowed characters for the field; as the user inputs text,
-         * each individual character will be checked against the pattern (rather than checking
-         * the entire value as a whole). If a character is not a match, it will be rejected.
+         * This pattern represents the allowed characters for the field; as the user
+         * inputs text, each individual character will be checked against the
+         * pattern (rather than checking the entire value as a whole). If a
+         * character is not a match, it will be rejected.
          *
-         * Pasted input will have each character checked individually; if any character
-         * doesn't match `allowedPattern`, the entire pasted string will be rejected.
+         * Pasted input will have each character checked individually; if any
+         * character doesn't match `allowedPattern`, the entire pasted string will
+         * be rejected.
          *
          * Note: if you were using `iron-input` in 1.0, you were also required to
          * set `prevent-invalid-input`. This is no longer needed as of Polymer 2.0,
@@ -7205,23 +7266,27 @@ _createRipple:function _createRipple(){this._rippleContainer=this.$.checkboxCont
          *
          */allowedPattern:{type:String},/**
          * Set to true to auto-validate the input value as you type.
-         */autoValidate:{type:Boolean,value:false}},observers:['_bindValueChanged(bindValue, _inputElement)'],listeners:{'input':'_onInput','keypress':'_onKeypress'},created:function created(){Polymer.IronA11yAnnouncer.requestAvailability();this._previousValidInput='';this._patternAlreadyChecked=false;},attached:function attached(){// If the input is added at a later time, update the internal reference.
+         */autoValidate:{type:Boolean,value:false},/**
+         * The native input element.
+         */_inputElement:Object},observers:['_bindValueChanged(bindValue, _inputElement)'],listeners:{'input':'_onInput','keypress':'_onKeypress'},created:function created(){Polymer.IronA11yAnnouncer.requestAvailability();this._previousValidInput='';this._patternAlreadyChecked=false;},attached:function attached(){// If the input is added at a later time, update the internal reference.
 this._observer=Polymer.dom(this).observeNodes(function(info){this._initSlottedInput();}.bind(this));},detached:function detached(){if(this._observer){Polymer.dom(this).unobserveNodes(this._observer);this._observer=null;}},/**
-       * Returns the distributed <input> element.
-       */get inputElement(){return this._inputElement;},_initSlottedInput:function _initSlottedInput(){this._inputElement=this.getEffectiveChildren()[0];if(this.inputElement&&this.inputElement.value){this.bindValue=this.inputElement.value;}this.fire('iron-input-ready');},get _patternRegExp(){var pattern;if(this.allowedPattern){pattern=new RegExp(this.allowedPattern);}else{switch(this.type){case'number':pattern=/[0-9.,e-]/;break;}}return pattern;},/**
+       * Returns the distributed input element.
+       */get inputElement(){return this._inputElement;},_initSlottedInput:function _initSlottedInput(){this._inputElement=this.getEffectiveChildren()[0];if(this.inputElement&&this.inputElement.value){this.bindValue=this.inputElement.value;}this.fire('iron-input-ready');},get _patternRegExp(){var pattern;if(this.allowedPattern){pattern=new RegExp(this.allowedPattern);}else{switch(this.inputElement.type){case'number':pattern=/[0-9.,e-]/;break;}}return pattern;},/**
        * @suppress {checkTypes}
-       */_bindValueChanged:function _bindValueChanged(bindValue,inputElement){// The observer could have run before attached() when we have actually initialized
-// this property.
+       */_bindValueChanged:function _bindValueChanged(bindValue,inputElement){// The observer could have run before attached() when we have actually
+// initialized this property.
 if(!inputElement){return;}if(bindValue===undefined){inputElement.value=null;}else if(bindValue!==inputElement.value){this.inputElement.value=bindValue;}if(this.autoValidate){this.validate();}// manually notify because we don't want to notify until after setting value
 this.fire('bind-value-changed',{value:bindValue});},_onInput:function _onInput(){// Need to validate each of the characters pasted if they haven't
 // been validated inside `_onKeypress` already.
 if(this.allowedPattern&&!this._patternAlreadyChecked){var valid=this._checkPatternValidity();if(!valid){this._announceInvalidCharacter('Invalid string of characters not entered.');this.inputElement.value=this._previousValidInput;}}this.bindValue=this._previousValidInput=this.inputElement.value;this._patternAlreadyChecked=false;},_isPrintable:function _isPrintable(event){// What a control/printable character is varies wildly based on the browser.
-// - most control characters (arrows, backspace) do not send a `keypress` event
+// - most control characters (arrows, backspace) do not send a `keypress`
+// event
 //   in Chrome, but the *do* on Firefox
 // - in Firefox, when they do send a `keypress` event, control chars have
 //   a charCode = 0, keyCode = xx (for ex. 40 for down arrow)
 // - printable characters always send a keypress event.
-// - in Firefox, printable chars always have a keyCode = 0. In Chrome, the keyCode
+// - in Firefox, printable chars always have a keyCode = 0. In Chrome, the
+// keyCode
 //   always matches the charCode.
 // None of this makes any sense.
 // For these keys, ASCII code == browser keycode.
@@ -7238,11 +7303,11 @@ event.keyCode==144||// num lock
 event.keyCode==145||// scroll lock
 event.keyCode>32&&event.keyCode<41||// page up/down, end, home, arrows
 event.keyCode>111&&event.keyCode<124;// fn keys
-return!anyNonPrintable&&!(event.charCode==0&&mozNonPrintable);},_onKeypress:function _onKeypress(event){if(!this.allowedPattern&&this.type!=='number'){return;}var regexp=this._patternRegExp;if(!regexp){return;}// Handle special keys and backspace
+return!anyNonPrintable&&!(event.charCode==0&&mozNonPrintable);},_onKeypress:function _onKeypress(event){if(!this.allowedPattern&&this.inputElement.type!=='number'){return;}var regexp=this._patternRegExp;if(!regexp){return;}// Handle special keys and backspace
 if(event.metaKey||event.ctrlKey||event.altKey){return;}// Check the pattern either here or in `_onInput`, but not in both.
 this._patternAlreadyChecked=true;var thisChar=String.fromCharCode(event.charCode);if(this._isPrintable(event)&&!regexp.test(thisChar)){event.preventDefault();this._announceInvalidCharacter('Invalid character '+thisChar+' not entered.');}},_checkPatternValidity:function _checkPatternValidity(){var regexp=this._patternRegExp;if(!regexp){return true;}for(var i=0;i<this.inputElement.value.length;i++){if(!regexp.test(this.inputElement.value[i])){return false;}}return true;},/**
-       * Returns true if `value` is valid. The validator provided in `validator` will be used first,
-       * then any constraints.
+       * Returns true if `value` is valid. The validator provided in `validator`
+       * will be used first, then any constraints.
        * @return {boolean} True if the value is valid.
        */validate:function validate(){if(!this.inputElement){this.invalid=false;return true;}// Use the nested input's native validity.
 var valid=this.inputElement.checkValidity();// Only do extra checking if the browser thought this was valid.
@@ -7593,7 +7658,7 @@ var url;if(document.baseURI!=null){url=resolveURL(href,/** @type {string} */docu
 if(window.location.origin){origin=window.location.origin;}else{origin=window.location.protocol+'//'+window.location.host;}var urlOrigin;if(url.origin){urlOrigin=url.origin;}else{urlOrigin=url.protocol+'//'+url.host;}if(urlOrigin!==origin){return null;}var normalizedHref=url.pathname+url.search+url.hash;// pathname should start with '/', but may not if `new URL` is not supported
 if(normalizedHref[0]!=='/'){normalizedHref='/'+normalizedHref;}// If we've been configured not to handle this url... don't handle it!
 if(this._urlSpaceRegExp&&!this._urlSpaceRegExp.test(normalizedHref)){return null;}// Need to use a full URL in case the containing page has a base URI.
-var fullNormalizedHref=resolveURL(normalizedHref,window.location.href).href;return fullNormalizedHref;},_makeRegExp:function _makeRegExp(urlSpaceRegex){return RegExp(urlSpaceRegex);}});})();(function(){var parsers=require('../common/parsers.js');window.Order=require('../common/order.js');;defineCustomElement('order-input',function(_Polymer$Element3){_inherits(_class3,_Polymer$Element3);function _class3(){_classCallCheck(this,_class3);return _possibleConstructorReturn(this,(_class3.__proto__||Object.getPrototypeOf(_class3)).apply(this,arguments));}_createClass(_class3,[{key:'_onInputChanged',value:function _onInputChanged(){var header=this.$.input.querySelector('header');if(header)header.hidden=true;var order=new parsers.OrderUpHtmlParser().parse(this.$.input);console.log('order',order);this._changeUrl(order);}},{key:'ready',value:function ready(){_get(_class3.prototype.__proto__||Object.getPrototypeOf(_class3.prototype),'ready',this).call(this);this.usePercentForTip=JSON.parse(localStorage.getItem('usePercentForTip'));this.$.input.focus();}// _computeTipPercentClass() {
+var fullNormalizedHref=resolveURL(normalizedHref,window.location.href).href;return fullNormalizedHref;},_makeRegExp:function _makeRegExp(urlSpaceRegex){return RegExp(urlSpaceRegex);}});})();(function(){var parsers=require('../common/parsers.js');window.Order=require('../common/order.js');;defineCustomElement('order-input',function(_Polymer$Element3){_inherits(_class3,_Polymer$Element3);function _class3(){_classCallCheck(this,_class3);return _possibleConstructorReturn(this,(_class3.__proto__||Object.getPrototypeOf(_class3)).apply(this,arguments));}_createClass(_class3,[{key:'_onInputChanged',value:function _onInputChanged(){var _this40=this;var header=this.$.input.querySelector('header');if(header)header.hidden=true;var order=parsers.getUserInputParsers().reduce(function(order,parser){if(order&&order.hasPeople){return order;}try{return new parser().parse(_this40.$.input).split();}catch(e){console.error('Developer Error!',e);return false;}},null);if(order&&order.hasPeople){this._changeUrl(order);}}},{key:'ready',value:function ready(){_get(_class3.prototype.__proto__||Object.getPrototypeOf(_class3.prototype),'ready',this).call(this);this.usePercentForTip=JSON.parse(localStorage.getItem('usePercentForTip'));this.$.input.focus();}// _computeTipPercentClass() {
 //     return this.usePercentForTip ? '' : 'hidden';
 // }
 // _computeTipDollarClass() {
@@ -7619,7 +7684,9 @@ var fullNormalizedHref=resolveURL(normalizedHref,window.location.href).href;retu
 // _onCheckboxTap() {
 //     localStorage.setItem('usePercentForTip', JSON.stringify(!this.usePercentForTip));
 // }
-},{key:'_changeUrl',value:function _changeUrl(order){if(!order||!order.hasPeople){this.$.location.query='';return;}var query='tax='+order.tax+'&fee='+order.fee+'&tip='+order.tipDollars;var _iteratorNormalCompletion2=true;var _didIteratorError2=false;var _iteratorError2=undefined;try{for(var _iterator2=order.people[Symbol.iterator](),_step2;!(_iteratorNormalCompletion2=(_step2=_iterator2.next()).done);_iteratorNormalCompletion2=true){var _step2$value=_slicedToArray(_step2.value,2),person=_step2$value[0],val=_step2$value[1];query+='&'+encodeURIComponent(person)+'='+Utils._formatUSD(val).slice(1);}}catch(err){_didIteratorError2=true;_iteratorError2=err;}finally{try{if(!_iteratorNormalCompletion2&&_iterator2.return){_iterator2.return();}}finally{if(_didIteratorError2){throw _iteratorError2;}}}this.$.location.query=query;}}]);return _class3;}(Polymer.Element));})();/**
+},{key:'_changeUrl',value:function _changeUrl(order){if(!order||!order.hasPeople){this.$.location.query='';return;}var query='tax='+order.tax+'&fee='+order.fee+'&tip='+order.tipDollars;var _iteratorNormalCompletion2=true;var _didIteratorError2=false;var _iteratorError2=undefined;try{for(var _iterator2=order.people[Symbol.iterator](),_step2;!(_iteratorNormalCompletion2=(_step2=_iterator2.next()).done);_iteratorNormalCompletion2=true){var _step2$value=_slicedToArray(_step2.value,2),person=_step2$value[0],val=_step2$value[1];query+='&'+encodeURIComponent(person)+'='+Utils._formatUSD(val).slice(1)// remove '$'
+.replace(/,/g,'');// remove commas in really big numbers (like that ever happens at lunch)
+}}catch(err){_didIteratorError2=true;_iteratorError2=err;}finally{try{if(!_iteratorNormalCompletion2&&_iterator2.return){_iterator2.return();}}finally{if(_didIteratorError2){throw _iteratorError2;}}}this.$.location.query=query;}}]);return _class3;}(Polymer.Element));})();/**
    * `Polymer.NeonAnimatableBehavior` is implemented by elements containing animations for use with
    * elements implementing `Polymer.NeonAnimationRunnerBehavior`.
    * @polymerBehavior
@@ -7646,16 +7713,21 @@ for(var key in map){allConfigs.push(map[key]);}return allConfigs;}};/**
    * `Polymer.NeonAnimationRunnerBehavior` adds a method to run animations.
    *
    * @polymerBehavior Polymer.NeonAnimationRunnerBehavior
-   */Polymer.NeonAnimationRunnerBehaviorImpl={_configureAnimations:function _configureAnimations(configs){var results=[];if(configs.length>0){for(var config,index=0;config=configs[index];index++){var neonAnimation=document.createElement(config.name);// is this element actually a neon animation?
-if(neonAnimation.isNeonAnimation){var result=null;// configuration or play could fail if polyfills aren't loaded
-try{result=neonAnimation.configure(config);// Check if we have an Effect rather than an Animation
-if(typeof result.cancel!='function'){result=document.timeline.play(result);}}catch(e){result=null;console.warn('Couldnt play','(',config.name,').',e);}if(result){results.push({neonAnimation:neonAnimation,config:config,animation:result});}}else{console.warn(this.is+':',config.name,'not found!');}}}return results;},_shouldComplete:function _shouldComplete(activeEntries){var finished=true;for(var i=0;i<activeEntries.length;i++){if(activeEntries[i].animation.playState!='finished'){finished=false;break;}}return finished;},_complete:function _complete(activeEntries){for(var i=0;i<activeEntries.length;i++){activeEntries[i].neonAnimation.complete(activeEntries[i].config);}for(var i=0;i<activeEntries.length;i++){activeEntries[i].animation.cancel();}},/**
+   */Polymer.NeonAnimationRunnerBehaviorImpl={_configureAnimations:function _configureAnimations(configs){var results=[];var resultsToPlay=[];if(configs.length>0){for(var config,index=0;config=configs[index];index++){var neonAnimation=document.createElement(config.name);// is this element actually a neon animation?
+if(neonAnimation.isNeonAnimation){var result=null;// Closure compiler does not work well with a try / catch here. .configure needs to be
+// explicitly defined
+if(!neonAnimation.configure){/**
+               * @param {Object} config
+               * @return {AnimationEffectReadOnly}
+               */neonAnimation.configure=function(config){return null;};}result=neonAnimation.configure(config);resultsToPlay.push({result:result,config:config});}else{console.warn(this.is+':',config.name,'not found!');}}}for(var i=0;i<resultsToPlay.length;i++){var result=resultsToPlay[i].result;var config=resultsToPlay[i].config;// configuration or play could fail if polyfills aren't loaded
+try{// Check if we have an Effect rather than an Animation
+if(typeof result.cancel!='function'){result=document.timeline.play(result);}}catch(e){result=null;console.warn('Couldnt play','(',config.name,').',e);}if(result){results.push({neonAnimation:neonAnimation,config:config,animation:result});}}return results;},_shouldComplete:function _shouldComplete(activeEntries){var finished=true;for(var i=0;i<activeEntries.length;i++){if(activeEntries[i].animation.playState!='finished'){finished=false;break;}}return finished;},_complete:function _complete(activeEntries){for(var i=0;i<activeEntries.length;i++){activeEntries[i].neonAnimation.complete(activeEntries[i].config);}for(var i=0;i<activeEntries.length;i++){activeEntries[i].animation.cancel();}},/**
      * Plays an animation with an optional `type`.
      * @param {string=} type
      * @param {!Object=} cookie
      */playAnimation:function playAnimation(type,cookie){var configs=this.getAnimationConfig(type);if(!configs){return;}this._active=this._active||{};if(this._active[type]){this._complete(this._active[type]);delete this._active[type];}var activeEntries=this._configureAnimations(configs);if(activeEntries.length==0){this.fire('neon-animation-finish',cookie,{bubbles:false});return;}this._active[type]=activeEntries;for(var i=0;i<activeEntries.length;i++){activeEntries[i].animation.onfinish=function(){if(this._shouldComplete(activeEntries)){this._complete(activeEntries);delete this._active[type];this.fire('neon-animation-finish',cookie,{bubbles:false});}}.bind(this);}},/**
      * Cancels the currently running animations.
-     */cancelAnimation:function cancelAnimation(){for(var k in this._animations){this._animations[k].cancel();}this._animations={};}};/** @polymerBehavior Polymer.NeonAnimationRunnerBehavior */Polymer.NeonAnimationRunnerBehavior=[Polymer.NeonAnimatableBehavior,Polymer.NeonAnimationRunnerBehaviorImpl];/**
+     */cancelAnimation:function cancelAnimation(){for(var k in this._active){var entries=this._active[k];for(var j in entries){entries[j].animation.cancel();}}this._active={};}};/** @polymerBehavior Polymer.NeonAnimationRunnerBehavior */Polymer.NeonAnimationRunnerBehavior=[Polymer.NeonAnimatableBehavior,Polymer.NeonAnimationRunnerBehaviorImpl];/**
    * Use `Polymer.NeonAnimationBehavior` to implement an animation.
    * @polymerBehavior
    */Polymer.NeonAnimationBehavior={properties:{/**
@@ -7673,7 +7745,7 @@ created:function created(){if(!document.body.animate){console.warn('No web anima
      * Sets `transform` and `transformOrigin` properties along with the prefixed versions.
      */setPrefixedProperty:function setPrefixedProperty(node,property,value){var map={'transform':['webkitTransform'],'transformOrigin':['mozTransformOrigin','webkitTransformOrigin']};var prefixes=map[property];for(var prefix,index=0;prefix=prefixes[index];index++){node.style[prefix]=value;}node.style[property]=value;},/**
      * Called when the animation finishes.
-     */complete:function complete(){}};Polymer({is:'fade-in-animation',behaviors:[Polymer.NeonAnimationBehavior],configure:function configure(config){var node=config.node;this._effect=new KeyframeEffect(node,[{'opacity':'0'},{'opacity':'1'}],this.timingFromConfig(config));return this._effect;}});Polymer({is:'fade-out-animation',behaviors:[Polymer.NeonAnimationBehavior],configure:function configure(config){var node=config.node;this._effect=new KeyframeEffect(node,[{'opacity':'1'},{'opacity':'0'}],this.timingFromConfig(config));return this._effect;}});Polymer({is:'paper-tooltip',hostAttributes:{role:'tooltip',tabindex:-1},behaviors:[Polymer.NeonAnimationRunnerBehavior],properties:{/**
+     */complete:function complete(config){}};Polymer({is:'fade-in-animation',behaviors:[Polymer.NeonAnimationBehavior],configure:function configure(config){var node=config.node;this._effect=new KeyframeEffect(node,[{'opacity':'0'},{'opacity':'1'}],this.timingFromConfig(config));return this._effect;}});Polymer({is:'fade-out-animation',behaviors:[Polymer.NeonAnimationBehavior],configure:function configure(config){var node=config.node;this._effect=new KeyframeEffect(node,[{'opacity':'1'},{'opacity':'0'}],this.timingFromConfig(config));return this._effect;}});Polymer({is:'paper-tooltip',hostAttributes:{role:'tooltip',tabindex:-1},behaviors:[Polymer.NeonAnimationRunnerBehavior],properties:{/**
          * The id of the element that the tooltip is anchored to. This element
          * must be a sibling of the tooltip.
          */for:{type:String,observer:'_findTarget'},/**
@@ -7712,13 +7784,13 @@ if(this._animationPlaying){this.cancelAnimation();this._showing=false;this._onAn
 if(this.marginTop!=14&&this.offset==14)offset=this.marginTop;var parentRect=this.offsetParent.getBoundingClientRect();var targetRect=this._target.getBoundingClientRect();var thisRect=this.getBoundingClientRect();var horizontalCenterOffset=(targetRect.width-thisRect.width)/2;var verticalCenterOffset=(targetRect.height-thisRect.height)/2;var targetLeft=targetRect.left-parentRect.left;var targetTop=targetRect.top-parentRect.top;var tooltipLeft,tooltipTop;switch(this.position){case'top':tooltipLeft=targetLeft+horizontalCenterOffset;tooltipTop=targetTop-thisRect.height-offset;break;case'bottom':tooltipLeft=targetLeft+horizontalCenterOffset;tooltipTop=targetTop+targetRect.height+offset;break;case'left':tooltipLeft=targetLeft-thisRect.width-offset;tooltipTop=targetTop+verticalCenterOffset;break;case'right':tooltipLeft=targetLeft+targetRect.width+offset;tooltipTop=targetTop+verticalCenterOffset;break;}// TODO(noms): This should use IronFitBehavior if possible.
 if(this.fitToVisibleBounds){// Clip the left/right side
 if(parentRect.left+tooltipLeft+thisRect.width>window.innerWidth){this.style.right='0px';this.style.left='auto';}else{this.style.left=Math.max(0,tooltipLeft)+'px';this.style.right='auto';}// Clip the top/bottom side.
-if(parentRect.top+tooltipTop+thisRect.height>window.innerHeight){this.style.bottom=parentRect.height+'px';this.style.top='auto';}else{this.style.top=Math.max(-parentRect.top,tooltipTop)+'px';this.style.bottom='auto';}}else{this.style.left=tooltipLeft+'px';this.style.top=tooltipTop+'px';}},_addListeners:function _addListeners(){if(this._target){this.listen(this._target,'mouseenter','show');this.listen(this._target,'focus','show');this.listen(this._target,'mouseleave','hide');this.listen(this._target,'blur','hide');this.listen(this._target,'tap','hide');}this.listen(this,'mouseenter','hide');},_findTarget:function _findTarget(){if(!this.manualMode)this._removeListeners();this._target=this.target;if(!this.manualMode)this._addListeners();},_manualModeChanged:function _manualModeChanged(){if(this.manualMode)this._removeListeners();else this._addListeners();},_onAnimationFinish:function _onAnimationFinish(){this._animationPlaying=false;if(!this._showing){this.toggleClass('hidden',true,this.$.tooltip);}},_removeListeners:function _removeListeners(){if(this._target){this.unlisten(this._target,'mouseenter','show');this.unlisten(this._target,'focus','show');this.unlisten(this._target,'mouseleave','hide');this.unlisten(this._target,'blur','hide');this.unlisten(this._target,'tap','hide');}this.unlisten(this,'mouseenter','hide');}});(function(){var parsers=require('../common/parsers.js');var Order=require('../common/order.js');var QueryStringParserLocal=parsers.QueryStringParser;defineCustomElement('order-split-results-table',function(_Polymer$Element4){_inherits(_class4,_Polymer$Element4);_createClass(_class4,[{key:'_onClipboardTap',value:function _onClipboardTap(){this.$.textForClipboard.hidden=false;this.$.textForClipboard.select();var successful=document.execCommand('copy');if(!successful){console.error('clipboard copy failed');}else{this.$.textForClipboard.hidden=true;}}},{key:'_computeBreakdownItems',value:function _computeBreakdownItems(people){if(!people){return[];}return Array.from(this.order.people.entries()).map(function(_ref2){var _ref3=_slicedToArray(_ref2,2),name=_ref3[0],price=_ref3[1];return{name:name,price:price};});}},{key:'_computeFeesPerPersonUSD',value:function _computeFeesPerPersonUSD(order,name){if(!order)return;return this._formatUSD(order.feesPerPerson[name]);}},{key:'_computeFeesPerPersonTooltip',value:function _computeFeesPerPersonTooltip(order,name){if(!order)return;return order.untaxedFees+' x '+order.people.get(name)+' / '+order.subTotal;}},{key:'_computePersonTotalUSD',value:function _computePersonTotalUSD(name){return this._formatUSD(this.order.totals.get(name));}},{key:'_multiplyUSD',value:function _multiplyUSD(a,b){return this._formatUSD(a*b);}}]);function _class4(){_classCallCheck(this,_class4);var _this40=_possibleConstructorReturn(this,(_class4.__proto__||Object.getPrototypeOf(_class4)).call(this));_this40.hidden=true;return _this40;}_createClass(_class4,[{key:'_onOrderChanged',value:function _onOrderChanged(order){console.log(order);if(order&&order.constructor!==Order){throw new Error('order must be of type Order');}this.hidden=!order;}},{key:'_formatUSD',value:function _formatUSD(n){return Utils._formatUSD(n);}},{key:'_divide',value:function _divide(dividend,divisor){return dividend/divisor;}/**
+if(parentRect.top+tooltipTop+thisRect.height>window.innerHeight){this.style.bottom=parentRect.height+'px';this.style.top='auto';}else{this.style.top=Math.max(-parentRect.top,tooltipTop)+'px';this.style.bottom='auto';}}else{this.style.left=tooltipLeft+'px';this.style.top=tooltipTop+'px';}},_addListeners:function _addListeners(){if(this._target){this.listen(this._target,'mouseenter','show');this.listen(this._target,'focus','show');this.listen(this._target,'mouseleave','hide');this.listen(this._target,'blur','hide');this.listen(this._target,'tap','hide');}this.listen(this,'mouseenter','hide');},_findTarget:function _findTarget(){if(!this.manualMode)this._removeListeners();this._target=this.target;if(!this.manualMode)this._addListeners();},_manualModeChanged:function _manualModeChanged(){if(this.manualMode)this._removeListeners();else this._addListeners();},_onAnimationFinish:function _onAnimationFinish(){this._animationPlaying=false;if(!this._showing){this.toggleClass('hidden',true,this.$.tooltip);}},_removeListeners:function _removeListeners(){if(this._target){this.unlisten(this._target,'mouseenter','show');this.unlisten(this._target,'focus','show');this.unlisten(this._target,'mouseleave','hide');this.unlisten(this._target,'blur','hide');this.unlisten(this._target,'tap','hide');}this.unlisten(this,'mouseenter','hide');}});(function(){var parsers=require('../common/parsers.js');var Order=require('../common/order.js');var QueryStringParserLocal=parsers.QueryStringParser;defineCustomElement('order-split-results-table',function(_Polymer$Element4){_inherits(_class4,_Polymer$Element4);_createClass(_class4,[{key:'_onClipboardTap',value:function _onClipboardTap(){this.$.textForClipboard.hidden=false;this.$.textForClipboard.select();var successful=document.execCommand('copy');if(!successful){console.error('clipboard copy failed');}else{this.$.textForClipboard.hidden=true;}}},{key:'_computeBreakdownItems',value:function _computeBreakdownItems(people){if(!people){return[];}return Array.from(this.order.people.entries()).map(function(_ref2){var _ref3=_slicedToArray(_ref2,2),name=_ref3[0],price=_ref3[1];return{name:name,price:price};});}},{key:'_computeFeesPerPersonUSD',value:function _computeFeesPerPersonUSD(order,name){if(!order)return;return this._formatUSD(order.feesPerPerson[name]);}},{key:'_computeFeesPerPersonTooltip',value:function _computeFeesPerPersonTooltip(order,name){if(!order)return;return order.untaxedFees+' x '+order.people.get(name)+' / '+order.subTotal;}},{key:'_computePersonTotalUSD',value:function _computePersonTotalUSD(name){return this._formatUSD(this.order.totals.get(name));}},{key:'_multiplyUSD',value:function _multiplyUSD(a,b){return this._formatUSD(a*b);}}]);function _class4(){_classCallCheck(this,_class4);var _this41=_possibleConstructorReturn(this,(_class4.__proto__||Object.getPrototypeOf(_class4)).call(this));_this41.hidden=true;return _this41;}_createClass(_class4,[{key:'_onOrderChanged',value:function _onOrderChanged(order){console.log(order);if(order&&order.constructor!==Order){throw new Error('order must be of type Order');}this.hidden=!order;}},{key:'_formatUSD',value:function _formatUSD(n){return Utils._formatUSD(n);}},{key:'_divide',value:function _divide(dividend,divisor){return dividend/divisor;}/**
                  * Returns a listing of names to split costs
                  * @param {object} totals - The totals property from the Order
                  * @returns {string} A view mapping names to split costs
                  */},{key:'_makeTextForClipboard',value:function _makeTextForClipboard(totals){if(!this.order){return;}// get length of longest name
 var longestName=-1;var _iteratorNormalCompletion3=true;var _didIteratorError3=false;var _iteratorError3=undefined;try{for(var _iterator3=totals[Symbol.iterator](),_step3;!(_iteratorNormalCompletion3=(_step3=_iterator3.next()).done);_iteratorNormalCompletion3=true){var _step3$value=_slicedToArray(_step3.value,2),person=_step3$value[0],price=_step3$value[1];longestName=Math.max(person.length,longestName);}// add 1 to longest name for a space after name
 }catch(err){_didIteratorError3=true;_iteratorError3=err;}finally{try{if(!_iteratorNormalCompletion3&&_iterator3.return){_iterator3.return();}}finally{if(_didIteratorError3){throw _iteratorError3;}}}longestName+=1;var name;var output='```\n';var _iteratorNormalCompletion4=true;var _didIteratorError4=false;var _iteratorError4=undefined;try{for(var _iterator4=totals[Symbol.iterator](),_step4;!(_iteratorNormalCompletion4=(_step4=_iterator4.next()).done);_iteratorNormalCompletion4=true){var _step4$value=_slicedToArray(_step4.value,2),_person=_step4$value[0],_price=_step4$value[1];var _name=_person;for(var i=_person.length;i<longestName;i++){_name+=' ';}output+=_name+this._formatUSD(_price)+'\n';}}catch(err){_didIteratorError4=true;_iteratorError4=err;}finally{try{if(!_iteratorNormalCompletion4&&_iterator4.return){_iterator4.return();}}finally{if(_didIteratorError4){throw _iteratorError4;}}}output+='```\n';return output+'\n'+this._makeUrl(this.order);}},{key:'_makeUrl',value:function _makeUrl(order){if(!this.order){return;}var params={};params.tax=order.tax;params.fee=order.fee;params.tip=order.tipDollars;var paramString=[].concat(_toConsumableArray(Object.entries(params)),_toConsumableArray(order.people.entries())).map(function(_ref4){var _ref5=_slicedToArray(_ref4,2),key=_ref5[0],value=_ref5[1];return key+'='+value;}).join('&');return location.href.split('?')[0]+'?'+paramString;}},{key:'_handleQueryStringChanged',value:function _handleQueryStringChanged(e,_ref6){var value=_ref6.value;this.order=new QueryStringParserLocal().parse();}}],[{key:'properties',get:function get(){return{order:{type:Object,observer:'_onOrderChanged'}};}}]);return _class4;}(Polymer.Element));})();defineCustomElement('github-link',function(_Polymer$Element5){_inherits(_class5,_Polymer$Element5);function _class5(){_classCallCheck(this,_class5);return _possibleConstructorReturn(this,(_class5.__proto__||Object.getPrototypeOf(_class5)).apply(this,arguments));}return _class5;}(Polymer.Element));// this is to help with debugging any SW caching issues if they appear
-var scriptSha='a680fe7';var htmlSha=document.querySelector('#sha').innerText;console.debug('script version: '+scriptSha);console.debug('html version:   '+htmlSha);if(scriptSha!==htmlSha){alert('Whoops. The cached files on your machine are out of sync with each other. That\'s our bad. Please hard-refresh the page?');};
-}).call(this,require("pBGvAp"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/fake_51d3420.js","/")
-},{"../common/order.js":1,"../common/parsers.js":2,"buffer":4,"pBGvAp":6}]},{},[7])
+var scriptSha='3d3011e';var htmlSha=document.querySelector('#sha').innerText;console.debug('script version: '+scriptSha);console.debug('html version:   '+htmlSha);if(scriptSha!==htmlSha){alert('Whoops. The cached files on your machine are out of sync with each other. That\'s our bad. Please hard-refresh the page?');};
+}).call(this,require("+xKvab"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/fake_407b71f6.js","/")
+},{"+xKvab":4,"../common/order.js":1,"../common/parsers.js":2,"buffer":5}]},{},[7])
