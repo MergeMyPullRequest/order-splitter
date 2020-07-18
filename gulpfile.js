@@ -16,11 +16,6 @@ const orderData = [
     './images/*'
 ];
 
-const dontVulcanizeTheseFiles = [
-    './bower_components/webcomponentsjs/custom-elements-es5-adapter.js',
-    './bower_components/webcomponentsjs/webcomponents-lite.js'
-];
-
 var argv = require('yargs').argv;
 var clean = require('gulp-clean');
 var debug = require('gulp-debug');
@@ -49,7 +44,7 @@ gulp.task('clean', function () {
 
 gulp.task('copy-files', function() {
     return merge(
-        gulp.src([...orderData, ...dontVulcanizeTheseFiles], {base: './'})
+        gulp.src(orderData, {base: './'})
             .pipe(gulp.dest(deployDir)),
         gulp.src([...copyTheseFilesToDist])
             .pipe(replace('INSERT_VERSION', version))
