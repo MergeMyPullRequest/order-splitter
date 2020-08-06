@@ -16,11 +16,6 @@ const orderData = [
     './images/*'
 ];
 
-const dontVulcanizeTheseFiles = [
-    './bower_components/webcomponentsjs/custom-elements-es5-adapter.js',
-    './bower_components/webcomponentsjs/webcomponents-lite.js'
-];
-
 var argv = require('yargs').argv;
 var clean = require('gulp-clean');
 var debug = require('gulp-debug');
@@ -29,14 +24,11 @@ var git = require('git-rev-sync');
 var gulp = require('gulp');
 var inquirer = require('inquirer');
 var parse = require('parse-git-config');
-var merge = require('gulp-merge');
+var merge2 = require('merge2');
 var replace = require('gulp-replace');
-var sequence = require('gulp-sequence');
 
 var version = JSON.parse(require('fs').readFileSync('./package.json')).version;
 
-gulp.task('default', ['copy-files']);
-
 gulp.task('clean', function () {
     return gulp.src(deployDir)
         .pipe(clean());
@@ -47,9 +39,9 @@ gulp.task('clean', function () {
         .pipe(clean());
 });
 
-gulp.task('copy-files', function() {
-    return merge(
-        gulp.src([...orderData, ...dontVulcanizeTheseFiles], {base: './'})
+gulp.task('copy-files', () => 
+    merge2(
+        gulp.src(orderData, {base: './'})
             .pipe(gulp.dest(deployDir)),
         gulp.src([...copyTheseFilesToDist])
             .pipe(replace('INSERT_VERSION', version))
@@ -57,8 +49,8 @@ gulp.task('copy-files', function() {
             .pipe(replace('INSERT_BUILD_TIME', new Date().toLocaleString()))
             .pipe(debug('copied files'))
             .pipe(gulp.dest(deployDir))
-    );
-});
+    )
+);
 
 gulp.task('gh-deploy', (cb) => {
     let url = argv.remoteUrl;
@@ -74,7 +66,7 @@ gulp.task('gh-deploy', (cb) => {
         return Promise.reject('--remoteUrl="..." or --remote="..." flag is required');
     }
     remoteUrl = url; //add to global scope
-    return sequence('gh-deploy-confirm', ['default'], 'gh-deploy-helper')(cb);
+    return gulp.series('gh-deploy-confirm', ['default'], 'gh-deploy-helper')(cb);
 });
 gulp.task('gh-deploy-confirm', () => {
     if ('https://github.com/MergeMyPullRequest/order-splitter.git' === remoteUrl ||
@@ -101,3 +93,6 @@ gulp.task('gh-deploy-helper', () => {
             branch: 'gh-pages'
         }));
 });
+
+gulp.task('default', gulp.series(['copy-files']));
+
