@@ -43,6 +43,7 @@ export class OrderInput extends PolymerElement {
                 overflow-x: auto;
                 overflow-y: auto;
                 height: 500px;
+                padding: 0.5rem;
             }
         </style>
         <div>
